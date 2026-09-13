@@ -87,14 +87,14 @@ function aiConfigUI(){
  $('ai-destination').textContent=t('aiEndpoint',{endpoint:config?.endpoints?.[$('provider').value]||'—'});
 }
 for(const id of ['provider','model','key'])$(id).addEventListener('input',()=>{clearAI();aiConfigUI();});
-$('provider').addEventListener('change',()=>{$('model').value='';$('key').value='';$('model').placeholder=$('provider').value==='deepseek'?'deepseek-chat':'model-id';clearAI();aiConfigUI();});
+$('provider').addEventListener('change',()=>{$('model').value='';$('key').value='';$('model').placeholder=$('provider').value==='deepseek'?'deepseek-flash':'model-id';clearAI();aiConfigUI();});
 $('clear-key').onclick=()=>{$('key').value='';clearAI();};
 $('explain').onclick=async()=>{
  if(!config){$('ai-status').textContent=t('aiLocal');return;}
  if(!result?.episodeCount||!$('key').value.trim()||!$('model').value.trim()||!$('consent').checked){$('ai-status').textContent=t('aiMissing');return;}
  const current=result,requestLocale=locale;aiController?.abort();const controller=new AbortController();aiController=controller;$('explain').disabled=true;$('ai-status').textContent=t('aiPending');$('ai-result').hidden=true;
  try{const response=await fetch(new URL('../api/explain',import.meta.url),{method:'POST',headers:{'Content-Type':'application/json'},signal:controller.signal,body:JSON.stringify({provider:$('provider').value,model:$('model').value.trim(),apiKey:$('key').value.trim(),locale,consent:true,evidence:aiEvidence(current)})});const data=await response.json();if(!response.ok)throw Error(data.error||'AI_PROVIDER_ERROR');if(current!==result||locale!==requestLocale)return;
- $('ai-text').replaceChildren();const labels=locale==='en'?['Summary','What is similar','What differs','Limits']:['证据概括','相似在哪里','差异在哪里','局限与缺口'];Object.keys(data.explanation).forEach((key,i)=>{const h=document.createElement('h3'),p=document.createElement('p');h.textContent=labels[i];p.textContent=data.explanation[key];$('ai-text').append(h,p);});$('ai-result').hidden=false;$('ai-status').textContent=`${data.provider} / ${data.model}`;
+ $('ai-text').replaceChildren();const labels=locale==='en'?['What stands out','Why these cases match','What to compare next','Keep in mind']:['这次先看什么','相似点怎么看','接下来对比哪里','使用边界'];Object.keys(data.explanation).forEach((key,i)=>{const h=document.createElement('h3'),p=document.createElement('p');h.textContent=labels[i];p.textContent=data.explanation[key];$('ai-text').append(h,p);});$('ai-result').hidden=false;$('ai-status').textContent=`${data.provider} / ${data.model}`;
  }catch(error){if(error.name!=='AbortError'&&current===result)$('ai-status').textContent=(aiErrors[error.message]||["AI 请求失败，请检查配置。","AI request failed. Check your configuration."])[locale==='en'?1:0];}
  finally{if(aiController===controller){aiController=null;aiConfigUI();}}
 };

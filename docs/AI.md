@@ -46,3 +46,9 @@ The server recomputes any quantile price from baseline and percentage, ignoring 
 - Pure static hosting cannot serve `/api/explain`; retrieval continues and the UI explains the missing local AI service.
 
 Public multi-user hosting requires a separately designed authentication, key-storage/secret-management, rate-limit and data-protection system. Do not expose this loopback demo server as a shared service.
+
+## Explanation wording update / 解读文案调整
+
+The prompt now prioritizes observations from the supplied case subset, component distances and a concrete case-comparison action. Caveats are concentrated in the final section. It explicitly distinguishes component distances from weights, preserves horizon units and prohibits invented chart shapes, years and market regimes. This is prompt guidance, not a semantic accuracy guarantee. Numeric prose remains blocked in this small update; the chart and table remain the source of numerical facts.
+
+本次小调整把解读集中到具体观察、相似依据和案例对比步骤，边界说明放在最后。数值仍以图表为准；没有新增自动核验 AI 所有事实的能力，也没有用预写的成功回答替代模型输出。
