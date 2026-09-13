@@ -27,3 +27,7 @@ Not verified:
 6. Enter your chosen provider/model/key, inspect the exact evidence summary, consent and run an AI call. Verify output stays separate from numeric facts. Provider changes must clear the key and consent.
 7. Export JSON; verify projection.actualFuture is null and source/synthetic labels remain.
 8. At 390px width, inspect readability and deliberate table overflow; verify no page-wide horizontal overflow.
+
+## Fixed-insight update
+
+36 local tests pass; static build and JS syntax checks pass. Added coverage for free-text/API task rejection before provider calls, exact computed payloads, case subset scope, zero returns, tied extremes and missing components. Live model behavior and the updated interactive layout have not been manually verified in this environment.

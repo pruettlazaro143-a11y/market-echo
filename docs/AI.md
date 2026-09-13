@@ -32,9 +32,9 @@ npm start
 
 ## Request / response contract
 
-The UI shows the same sanitized evidence object sent to the model: symbol, market/instrument, bar interval, horizon, cutoff, synthetic flag, comparison mode, baseline/unit, quantiles and up to five cases with distance components. No complete CSV, screenshot, account data or private Fieldnote information is sent.
+The preview shows the exact fixed topic and computed facts sent to the model, as described below. No complete CSV, screenshot, account data, free-text labels or private Fieldnote information is sent.
 
-The server recomputes any quantile price from baseline and percentage, ignoring client-supplied price values. It never accepts client-supplied system instructions. The model returns four string fields: `summary`, `similarities`, `differences`, `limitations`. Numbers stay in deterministic UI panels; digits in AI prose and a conservative set of transaction/prediction phrases are rejected. Text is rendered with `textContent`. This is a limited output check, not a semantic guarantee or legal-compliance certification.
+The server recomputes any quantile price from baseline and percentage, ignoring client-supplied price values. It never accepts client-supplied system instructions. The model returns one short `answer` string. Numbers stay in deterministic UI panels; digits in AI prose and a conservative set of transaction/prediction phrases are rejected. Text is rendered with `textContent`. This is a limited output check, not a semantic guarantee or legal-compliance certification.
 
 ## Key handling and runtime
 
@@ -47,16 +47,10 @@ The server recomputes any quantile price from baseline and percentage, ignoring 
 
 Public multi-user hosting requires a separately designed authentication, key-storage/secret-management, rate-limit and data-protection system. Do not expose this loopback demo server as a shared service.
 
-## Explanation wording update / 解读文案调整
+## Fixed insights / 固定解读
 
-The prompt now prioritizes observations from the supplied case subset, component distances and a concrete case-comparison action. Caveats are concentrated in the final section. It explicitly distinguishes component distances from weights, preserves horizon units and prohibits invented chart shapes, years and market regimes. This is prompt guidance, not a semantic accuracy guarantee. Numeric prose remains blocked in this small update; the chart and table remain the source of numerical facts.
+Free-text questions have been removed from both the UI and API. The server rejects question/messages/prompt fields and unknown tasks before contacting any provider. Three tasks are supported: match, divergence, compare. The program computes facts from the first up to five cases in similarity order: outcome sign counts, highest/lowest outcome rows, the return spread in percentage points, and within-component distance ranges. These statistics do not describe all retrieved cases. Ties and zero returns are handled explicitly.
 
-本次小调整把解读集中到具体观察、相似依据和案例对比步骤，边界说明放在最后。数值仍以图表为准；没有新增自动核验 AI 所有事实的能力，也没有用预写的成功回答替代模型输出。
+The browser displays those facts and clickable extreme-case rows without requiring AI. The server recomputes the same payload from validated evidence. It forwards only the task and computed facts; user-supplied symbol labels, IDs, dates and arbitrary text are not sent to the model. The consent preview matches that payload. AI adds at most three short sentences, with one fixed boundary note underneath. No free conversation history or natural-language task override is supported.
 
-## Case questions / 案例追问
-
-An optional question (maximum 600 characters) is sent as untrusted user data alongside the same sanitized evidence. Editing it cancels the in-flight UI request, clears the prior answer and requires renewed consent; a provider may still bill an already-sent call. No conversation history is stored or forwarded. The preview includes the question. Do not enter credentials or personal sensitive information.
-
-The prompt directs the model to explain historical evidence and redirect requests for current/future direction, asset picks or positions. This prompt and the existing output checks are limited safeguards, not guaranteed intent detection or legal clearance. The product does not purport to waive liability for its developer or any model provider.
-
-追问仅围绕历史案例，前后问题不串成聊天历史。模型按提示词将交易方向请求转回历史证据；没有声称能阻止所有绕过。上线经营或提供具体方向服务前，应另行评估适用法律和供应商条款。
+This is not a comprehensive defense against all model errors or a validated prediction system. Automated checks use mock model responses; paid live behavior and desktop/mobile layout require manual acceptance.

@@ -1,3 +1,4 @@
+import {insightPayload} from '../lib/market-echo/insights.mjs';
 import {DECISION_HORIZON_PRESETS} from '../lib/market-echo/engine.mjs';
 import {marketConfig,ASSETS} from '../lib/market-echo/markets.mjs';
 import {priceProjection,aiEvidence} from '../lib/market-echo/presentation.mjs';
@@ -6,10 +7,23 @@ const $=id=>document.getElementById(id),esc=s=>String(s).replace(/[&<>"']/g,c=>(
 let locale='zh';try{locale=localStorage.getItem('market-echo-language')==='en'?'en':'zh';}catch{}
 const t=(k,v)=>tr(locale,k,v),dt=s=>new Date(s).toISOString().slice(0,16).replace('T',' '),pct=n=>n===null?'—':`${n>=0?'+':''}${n.toFixed(2)}%`;
 const money=n=>n===null?'—':n!==0&&Math.abs(n)<0.000001?n.toExponential(3):new Intl.NumberFormat(locale==='en'?'en-US':'zh-CN',{maximumFractionDigits:n<1?6:2}).format(n);
+let insightTask='match';
 let result=null,selected=0,worker=null,busy=false,aiController=null,config=null,statusKey='ready',statusVars={},lastError=null;
 const horizonText=h=>t(h.unit,{n:h.value});
 function setStatus(k,v={}){statusKey=k;statusVars=v;$('status').textContent=t(k,v);}
-function refreshPayload(){if(result){const evidence=aiEvidence(result),question=$('question').value.trim();$('payload').textContent=JSON.stringify(question?{evidence,question}:evidence,null,2);}}
+function refreshPayload(){
+ if(!result?.episodeCount){$('payload').textContent='';$('insight-facts').replaceChildren();return;}
+ const payload=insightPayload(aiEvidence(result),insightTask),f=payload.facts;
+ $('payload').textContent=JSON.stringify(payload,null,2);
+ const box=$('insight-facts');box.replaceChildren();const info=document.createElement('p');
+ info.textContent=locale==='en'?`Computed facts · First ${f.sampleCount} of ${f.totalMatched} matched cases: ${f.outcomes.up} up / ${f.outcomes.down} down / ${f.outcomes.flat} unchanged. Historical outcome spread: ${f.spreadPercentagePoints.toFixed(2)} percentage points.`:`程序计算 · 匹配到 ${f.totalMatched} 个案例，以下只比较前 ${f.sampleCount} 个：后续上涨 ${f.outcomes.up} 个 / 下跌 ${f.outcomes.down} 个 / 持平 ${f.outcomes.flat} 个。后续幅度差 ${f.spreadPercentagePoints.toFixed(2)} 个百分点。`;
+ box.append(info);
+ for(const [label,c] of [[locale==='en'?'Lowest historical outcome':'历史后续幅度最低',f.lowest],[locale==='en'?'Highest historical outcome':'历史后续幅度最高',f.highest]]){
+ const button=document.createElement('button');button.type='button';button.className='secondary';button.textContent=`${label} · #${String(c.row).padStart(2,'0')} · ${pct(c.change)}`;button.onclick=()=>{selected=c.row-1;render();$('chart').scrollIntoView({behavior:'smooth',block:'center'});};box.append(button);
+ }
+ if(insightTask==='match'){const line=document.createElement('p');line.textContent=Object.entries(f.componentRanges).filter(([,v])=>v).map(([k,v])=>`${({shape:locale==='en'?'Shape':'形态',structure:locale==='en'?'Structure':'结构',volatility:locale==='en'?'Volatility':'波动',volume:locale==='en'?'Volume':'量能'})[k]} ${v.min.toFixed(3)}–${v.max.toFixed(3)}`).join(' · ')+(locale==='en'?' · Distance ranges, not weights; compare within each component.':' · 距离范围，非权重；只能在同一分量内比较。');box.append(line);}
+}
+
 function clearAI(){aiController?.abort();aiController=null;$('ai-result').hidden=true;$('ai-text').replaceChildren();$('ai-status').textContent='';$('consent').checked=false;$('explain').disabled=!config;}
 function options(el,items,value){el.innerHTML=items.map(([v,label])=>`<option value="${v}">${esc(label)}</option>`).join('');if(items.some(([v])=>v===value))el.value=value;}
 function populate(reset=false){
@@ -81,7 +95,7 @@ function chart(p){
  svg+=`<path d="${path(q)}" fill="none" stroke="#242b27" stroke-width="2.8"/><circle cx="${split}" cy="${y(baseline)}" r="5" fill="#242b27"/><line x1="${split}" x2="${split}" y1="${T}" y2="${H-B}" stroke="#6b766b" stroke-dasharray="4 4"/><line x1="${W-R}" x2="${W-R}" y1="${T}" y2="${H-B}" stroke="#4c8062" stroke-dasharray="4 4"/><text x="${L}" y="${H-39}" fill="#646e65" font-size="11">${locale==='en'?'−95 bars':'−95 根'}</text><text x="${split}" y="${H-39}" text-anchor="middle" fill="#242b27" font-size="11">${esc(t('zero'))}</text><text x="${W-R}" y="${H-39}" text-anchor="end" fill="#345a45" font-size="11">${esc(horizonText(result.decisionHorizon))}</text><text x="${split}" y="${H-18}" text-anchor="middle" fill="#646e65" font-size="10">${dt(p.asOf)} UTC</text><text x="${W-R}" y="${H-18}" text-anchor="end" fill="#646e65" font-size="10">${esc(p.endpoint?dt(p.endpoint)+' UTC':t('calendarPending',{n:result.decisionHorizon.value}))}</text></svg>`;
  $('chart').innerHTML=svg;
 }
-$('question').addEventListener('input',()=>{clearAI();refreshPayload();aiConfigUI();});
+document.querySelectorAll('[data-insight]').forEach(button=>button.addEventListener('click',()=>{insightTask=button.dataset.insight;clearAI();document.querySelectorAll('[data-insight]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));refreshPayload();aiConfigUI();}));
 const aiErrors={AI_QUESTION_INVALID:['问题不能超过 600 字符。','Question must be at most 600 characters.'],AI_AUTH_FAILED:['密钥无效或无权限，请核对供应商。','Invalid key or permission. Check the provider.'],AI_RATE_LIMITED:['供应商限流或额度不足，请稍后再试。','Provider rate limit or quota reached. Try later.'],AI_OUTPUT_BLOCKED:['输出不符合证据解释规则，已丢弃。可换模型重试，数值结果不受影响。','Output failed the evidence-only rules and was discarded. Try another model; numerical results are unchanged.'],AI_OUTPUT_INVALID:['模型未返回约定格式，请使用支持 JSON 指令的模型。','Model returned an invalid format. Use a model that follows JSON instructions.'],AI_PROVIDER_ERROR:['供应商拒绝请求，请检查模型 ID 与 JSON 输出支持。','Provider rejected the request. Check model ID and JSON output support.'],AI_NETWORK_ERROR:['供应商请求超时或网络失败；没有自动重试或切换供应商。','Provider timeout/network failure. No automatic retry or provider switch.'],AI_LOCAL_LIMIT:['当前请求仍在进行或请求过于频繁，请稍后再试。','A request is active or the local rate limit was reached. Try later.']};
 function aiConfigUI(){
  $('ai-runtime').textContent=config?'':t('aiLocal');$('explain').disabled=!config||!result?.episodeCount||!!aiController;
@@ -95,8 +109,8 @@ $('explain').onclick=async()=>{
  if(!config){$('ai-status').textContent=t('aiLocal');return;}
  if(!result?.episodeCount||!$('key').value.trim()||!$('model').value.trim()||!$('consent').checked){$('ai-status').textContent=t('aiMissing');return;}
  const current=result,requestLocale=locale;aiController?.abort();const controller=new AbortController();aiController=controller;$('explain').disabled=true;$('ai-status').textContent=t('aiPending');$('ai-result').hidden=true;
- try{const response=await fetch(new URL('../api/explain',import.meta.url),{method:'POST',headers:{'Content-Type':'application/json'},signal:controller.signal,body:JSON.stringify({provider:$('provider').value,model:$('model').value.trim(),apiKey:$('key').value.trim(),locale,consent:true,question:$('question').value.trim(),evidence:aiEvidence(current)})});const data=await response.json();if(!response.ok)throw Error(data.error||'AI_PROVIDER_ERROR');if(controller.signal.aborted||current!==result||locale!==requestLocale)return;
- $('ai-text').replaceChildren();const labels=locale==='en'?['What stands out','Why these cases match','What to compare next','Keep in mind']:['这次先看什么','相似点怎么看','接下来对比哪里','使用边界'];Object.keys(data.explanation).forEach((key,i)=>{const h=document.createElement('h3'),p=document.createElement('p');h.textContent=labels[i];p.textContent=data.explanation[key];$('ai-text').append(h,p);});$('ai-result').hidden=false;$('ai-status').textContent=`${data.provider} / ${data.model}`;
+ try{const response=await fetch(new URL('../api/explain',import.meta.url),{method:'POST',headers:{'Content-Type':'application/json'},signal:controller.signal,body:JSON.stringify({provider:$('provider').value,model:$('model').value.trim(),apiKey:$('key').value.trim(),locale,consent:true,task:insightTask,evidence:aiEvidence(current)})});const data=await response.json();if(!response.ok)throw Error(data.error||'AI_PROVIDER_ERROR');if(controller.signal.aborted||current!==result||locale!==requestLocale)return;
+ $('ai-text').textContent=data.explanation.answer;$('ai-result').hidden=false;$('ai-status').textContent=`${data.provider} / ${data.model}`;
  }catch(error){if(!controller.signal.aborted&&error.name!=='AbortError'&&current===result)$('ai-status').textContent=(aiErrors[error.message]||["AI 请求失败，请检查配置。","AI request failed. Check your configuration."])[locale==='en'?1:0];}
  finally{if(aiController===controller){aiController=null;aiConfigUI();}}
 };

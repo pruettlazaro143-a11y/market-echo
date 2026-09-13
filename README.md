@@ -72,7 +72,7 @@ Required: `timestamp,open,high,low,close`. Optional: `volume,end` (or short colu
 
 Run retrieval, select DeepSeek / OpenAI / Anthropic, enter your provider's exact model ID and API key, inspect the evidence preview and consent before each new result/provider. **API fees are paid to your provider.** Other OpenAI-compatible endpoints can be configured by the local server operator; see [AI.md](docs/AI.md).
 
-AI returns four prose sections: summary, similarities, differences and limitations. Numeric calculations stay in the deterministic engine. Numeric/transactional prose is rejected by a conservative output check; this check is not a complete semantic safety guarantee. No raw HTML is rendered.
+Choose one of three fixed insights: matching dimensions, outcome differences, or cases to compare. Computed facts and case links work without AI; AI adds a short explanation. Free-text questions are not accepted. Numeric calculations stay in the deterministic engine. Numeric/transactional prose is rejected by a conservative output check; this check is not a complete semantic safety guarantee. No raw HTML is rendered.
 
 CSV stays in browser memory for retrieval. AI sends a small, inspectable summary through the local server to exactly the chosen provider. The full CSV is not sent. Keys remain in transient page/server memory, are not written to this project's disk/logs/browser storage, and are cleared on provider changes or by the clear-key button. Provider data policies still apply. No automatic retry, credential fallback or provider switching.
 
