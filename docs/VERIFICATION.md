@@ -15,7 +15,7 @@ Not verified:
 - Mobile layout and AI/browser end-to-end remain unverified by automation. The owner manually verified baseline/endpoint presentation, case switching, other-crypto structure mode and English switching on 2026-09-13, and supplied a desktop screenshot. Automated localhost navigation was blocked by the remote browser environment.
 - Live paid model calls: no user key was used. Model-specific access/JSON-mode support must be checked on first use.
 - Predictive validity, strategy profitability, real data provenance or certified trading calendars.
-- GitHub Actions results are separate from the local checks above; consult the repository Actions tab for the published commit.
+- GitHub Actions run [34737962258](https://github.com/pruettlazaro143-a11y/market-echo/actions/runs/34737962258) did not start: GitHub reported an account lock due to a billing issue. Cloud tests/build are therefore unverified; the local results above remain separate. The workflow is retained for a rerun after the account restriction is resolved.
 
 ## Manual acceptance
 

@@ -20,7 +20,9 @@
 
 如果你试用后发现数据格式、案例展示或时间口径的问题，欢迎提交 Issue。觉得有用也欢迎 Star。
 
-发布时附真实仓库链接与演示录屏。
+项目地址：https://github.com/pruettlazaro143-a11y/market-echo
+
+配图请用真实界面截图，并保留合成数据标记。
 
 ## English launch (after the repository is public)
 
@@ -31,6 +33,8 @@ Import OHLCV CSV, retrieve similar historical windows, and inspect what happened
 The demo is synthetic. Similarity is not a probability, and historical outcomes are not forecasts. Every case includes dates and distance components so you can inspect the evidence yourself.
 
 Feedback on data handling, temporal boundaries, and reproducibility is welcome.
+
+Try it: https://github.com/pruettlazaro143-a11y/market-echo
 
 ## 30-second demo
 

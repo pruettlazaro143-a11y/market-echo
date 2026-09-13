@@ -6,9 +6,22 @@
 
 [English](README.md) · [AI 配置](docs/AI.md) · [验证记录](docs/VERIFICATION.md)
 
+![合成数据的历史案例数值预览，非界面截图](docs/preview.svg)
+
+*合成数据数值示意，不代表真实市场表现。*
+
+[三分钟上手与常见问题](docs/QUICKSTART.md) · [提交问题](https://github.com/pruettlazaro143-a11y/market-echo/issues/new/choose)
+
 ## 启动
 
-安装 Node.js 22+，在解压后的项目目录运行：
+安装 Node.js 22+。下载 ZIP 并解压，或用 Git 获取项目：
+
+```sh
+git clone https://github.com/pruettlazaro143-a11y/market-echo.git
+cd market-echo
+```
+
+在项目目录运行：
 
 ```sh
 npm start

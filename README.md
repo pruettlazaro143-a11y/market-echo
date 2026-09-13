@@ -6,6 +6,12 @@ Find similar historical price windows, inspect how they ended, and see what the 
 
 [中文](README.zh-CN.md) · [Methodology](docs/METHODOLOGY.md) · [AI setup](docs/AI.md) · [Verification](docs/VERIFICATION.md)
 
+![Historical case output from synthetic data, not a UI screenshot](docs/preview.svg)
+
+*Synthetic numerical preview; not real-market performance.*
+
+[Three-minute walkthrough & FAQ](docs/QUICKSTART.md) · [Report an issue](https://github.com/pruettlazaro143-a11y/market-echo/issues/new/choose)
+
 ## Start
 
 ```sh
@@ -13,7 +19,7 @@ git clone https://github.com/pruettlazaro143-a11y/market-echo.git
 cd market-echo
 ```
 
-Node.js 22+ is required. Extract this directory and run:
+Node.js 22+ is required. In the project directory, run:
 
 ```sh
 npm start
