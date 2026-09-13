@@ -12,6 +12,15 @@ Find similar historical price windows, inspect how they ended, and see what the 
 
 [Three-minute walkthrough & FAQ](docs/QUICKSTART.md) · [Report an issue](https://github.com/pruettlazaro143-a11y/market-echo/issues/new/choose)
 
+## v0.3: deeper imports and optional indicators
+
+- Merge up to 24 historical files for one instrument: 30 MB / 100,000 bars, with conflicting overlaps rejected.
+- Import unzipped Binance raw klines, including microsecond timestamps, or standard OHLCV CSV.
+- Select up to 30 / 60 / 100 non-overlapping cases; inspect coverage, freshness and exclusion reasons.
+- Toggle MA 20/60/200 and EMA 20/60, calculated from pre-cutoff closed history. No indicator extends into the rebased future.
+
+[Data sources, formats and indicator definitions](docs/DATA.md). Real cross-market history is user-provided; no live feed is connected.
+
 ## Start
 
 ```sh
@@ -59,7 +68,7 @@ Market selection does not download or validate a feed. All markets need your own
 
 ## CSV
 
-Required: `timestamp,open,high,low,close`. Optional: `volume,end` (or short column names `t,o,h,l,c,v`). Plain comma-separated, no quoted fields. Maximum 5 MB / 20,000 bars.
+Required: `timestamp,open,high,low,close`. Optional: `volume,end` (or short column names `t,o,h,l,c,v`). Plain comma-separated, no quoted fields. Maximum 30 MB / 100,000 bars.
 
 - Timestamp = bar open; use Unix seconds/milliseconds or ISO with timezone, e.g. `2025-01-01T00:00:00Z`.
 - Missing `end` is inferred from the selected interval. Daily session markets may supply an actual close timestamp with a shorter session duration.
@@ -78,7 +87,7 @@ CSV stays in browser memory for retrieval. AI sends a small, inspectable summary
 
 ## Status and contribution
 
-Version **0.2.0**. Existing engine plus standalone bilingual UI, endpoint arithmetic, market taxonomy and local AI gateway. No private Fieldnote database, payment integration, production keys or old Git history is included. Built-in CSV is synthetic.
+Version **0.3.0**. Existing engine plus standalone bilingual UI, endpoint arithmetic, market taxonomy and local AI gateway. No private Fieldnote database, payment integration, production keys or old Git history is included. Built-in CSV is synthetic.
 
 See [verification](docs/VERIFICATION.md) for exactly what was tested. Live provider calls, real-browser visuals and public deployment must not be inferred from passing unit tests. The provided CI runs tests/build; it does not publish.
 

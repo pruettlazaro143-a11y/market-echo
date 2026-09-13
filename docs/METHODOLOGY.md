@@ -6,7 +6,7 @@ The latest 96 closed bars form the query. Candidates are 96-bar windows from the
 
 Full-mode distance weights: shape 0.50, structure 0.25, volatility 0.15, volume 0.10. Other-crypto structure-only mode uses shape 2/3 and structure 1/3; volatility/volume do not participate and no rebased price is exposed. Missing volume removes the channel and renormalizes the remaining weights for every candidate. Candidate distance must be <= 0.85. Similarity display is `round(100 * exp(-distance))`. The threshold and weights are inherited heuristics, not learned or calibrated parameters.
 
-Candidates are sorted by distance. A greedy selection retains at most 30 non-overlapping context-plus-outcome intervals. This depends on ranking order and is not a proof of statistical independence.
+Candidates are sorted by distance. A greedy selection retains at most the selected 30 / 60 / 100 non-overlapping context-plus-outcome intervals. This depends on ranking order and is not a proof of statistical independence.
 
 ## Temporal boundaries
 

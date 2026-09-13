@@ -1,3 +1,4 @@
+import {INDICATORS} from '../lib/market-echo/indicators.mjs';
 import {insightPayload} from '../lib/market-echo/insights.mjs';
 import {DECISION_HORIZON_PRESETS} from '../lib/market-echo/engine.mjs';
 import {marketConfig,ASSETS} from '../lib/market-echo/markets.mjs';
@@ -48,23 +49,24 @@ $('category').addEventListener('change',()=>populate(true));
 $('asset').addEventListener('change',()=>{const cfg=populate();$('symbol').value=cfg.defaultSymbol;$('quote').value=cfg.quote;});
 $('source').addEventListener('change',()=>populate());
 $('form').addEventListener('change',changed);
-for(const id of ['symbol','quote'])$(id).addEventListener('input',changed);
-$('file').addEventListener('change',()=>{if($('file').files[0]?.name.startsWith('synthetic-'))$('synthetic').checked=true;});
+for(const id of ['symbol','quote','data-provider','cutoff'])$(id).addEventListener('input',changed);
+$('file').addEventListener('change',()=>{if($('file').files&&[...$('file').files].some(f=>f.name.startsWith('synthetic-')))$('synthetic').checked=true;});
 $('language').addEventListener('change',()=>{locale=$('language').value;try{localStorage.setItem('market-echo-language',locale);}catch{}clearAI();translate();});
 function setBusy(v){busy=v;for(const e of $('form').querySelectorAll('input,select,button'))e.disabled=v;$('language').disabled=v;if(!v)populate();$('run').textContent=t(v?'running':'run');}
 function showError(message){lastError=message;$('error').textContent=errorText(message,locale);$('error').hidden=false;setStatus('noResult');}
-async function run(e){e?.preventDefault();if(busy)return;changed();setBusy(true);let csv;
+async function run(e){e?.preventDefault();if(busy)return;changed();setBusy(true);let files;
  try{
-  if($('source').value==='csv'){const f=$('file').files[0];if(!f){$('error').textContent=t('selectFile');$('error').hidden=false;setBusy(false);return;}if(f.size>5_000_000)throw Error('CSV 最大 5 MB');csv=await f.text();}
+  if($('source').value==='csv'){const chosen=[...$('file').files];if(!chosen.length){$('error').textContent=t('selectFile');$('error').hidden=false;setBusy(false);return;}if(chosen.length>24)throw Error('CSV_FILES_LIMIT');if(chosen.reduce((n,f)=>n+f.size,0)>30_000_000)throw Error('CSV 最大 30 MB');files=await Promise.all(chosen.map(async f=>({text:await f.text()})));}
+
   const cfg=marketConfig($('category').value,$('asset').value,['us','cn'].includes($('category').value)?'spot':$('instrument').value),[value,unit]=$('horizon').value.split(':');
   setStatus('running');worker?.terminate();worker=new Worker(new URL('./worker.mjs',import.meta.url),{type:'module'});
   worker.onmessage=({data})=>{setBusy(false);worker.terminate();worker=null;if(data.error){showError(data.error);return;}result=data.result;selected=0;render();setStatus('done',{bars:result.scannedBars.toLocaleString(),cases:result.episodeCount});};
   worker.onerror=()=>{worker?.terminate();worker=null;setBusy(false);$('error').textContent=t('workerFail');$('error').hidden=false;};
-  worker.postMessage({source:$('source').value,csv,synthetic:$('synthetic').checked,settings:{...cfg,timeframe:$('timeframe').value,symbol:$('symbol').value.trim(),quoteUnit:$('quote').value.trim(),decisionHorizon:{value:Number(value),unit}}});
+  worker.postMessage({source:$('source').value,files,format:$('csv-format').value,provider:$('data-provider').value.trim(),adjustment:$('adjustment').value,synthetic:$('synthetic').checked,settings:{...cfg,maxCases:Number($('case-limit').value),asOf:$('cutoff').value?new Date($('cutoff').value+'Z').toISOString():undefined,timeframe:$('timeframe').value,symbol:$('symbol').value.trim(),quoteUnit:$('quote').value.trim(),decisionHorizon:{value:Number(value),unit}}});
  }catch(error){setBusy(false);showError(error.message);}
 }
 function render(){
- $('results').hidden=false;const p=priceProjection(result),h=horizonText(result.decisionHorizon),q=p.quantiles;
+ $('results').hidden=false;renderQuality();renderIndicatorValues();const p=priceProjection(result),h=horizonText(result.decisionHorizon),q=p.quantiles;
  $('result-name').textContent=`${result.synthetic?t('demo')+' / ':''}${result.symbol} · ${result.timeframe} → ${h}`;
  $('result-meta').textContent=`${dt(result.asOf)} UTC · ${result.episodeCount} ${t('case')}`;
  const endpoint=p.endpoint?`${dt(p.endpoint)} UTC`:t('calendarPending',{n:result.decisionHorizon.value});
@@ -85,7 +87,8 @@ function chart(p){
  const x=i=>i<=n-1?L+i/(n-1)*(split-L):split+(i-n+1)/futureN*(W-R-split);
  const convert=(bars,base)=>bars.map(b=>p.pricesEnabled?b.c/base*p.base:(b.c/base-1)*100);
  const baseline=p.pricesEnabled?p.base:0,q=convert(result.query,result.query.at(-1).c),hist=c?convert(c.context,c.context.at(-1).c):[],futures=result.cases.map(c=>[baseline,...convert(c.future,c.context.at(-1).c)]);
- const values=[...q,...hist,...futures.flat()];let lo=Math.min(...values),hi=Math.max(...values);const pad=Math.max(p.pricesEnabled?p.base*.001:.1,(hi-lo)*.15);lo-=pad;hi+=pad;
+ const overlays=INDICATORS.filter(spec=>document.querySelector(`[data-indicator="${spec.id}"]`).checked).map(spec=>({...spec,values:(result.indicators?.series[spec.id]||[]).map(v=>v===null?null:p.pricesEnabled?v:(v/p.base-1)*100)}));
+ const values=[...q,...hist,...futures.flat(),...overlays.flatMap(s=>s.values.filter(v=>v!==null))];let lo=Math.min(...values),hi=Math.max(...values);const pad=Math.max(p.pricesEnabled?p.base*.001:.1,(hi-lo)*.15);lo-=pad;hi+=pad;
  const y=v=>T+(hi-v)/(hi-lo)*(H-T-B),path=(vs,start=0)=>vs.map((v,i)=>`${i?'L':'M'}${x(start+i).toFixed(2)},${y(v).toFixed(2)}`).join(' ');
  const label=v=>p.pricesEnabled?money(v):pct(v);
  let svg=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(t('chart')+' '+t('chartNote'))}"><rect x="${split}" y="${T}" width="${W-R-split}" height="${H-T-B}" fill="#eef0e9"/><text x="${L}" y="23" fill="#242b27" font-size="14">${esc(t('anchorLabel',{price:money(p.base)+' '+p.unit}))}</text><text x="${W-R}" y="23" text-anchor="end" fill="#345a45" font-size="14">${esc(c?p.pricesEnabled?t('endpointLabel',{price:money(p.cases[selected].price),change:pct(c.returnPct)}):t('structureEndpoint',{change:pct(c.returnPct)}):t('noResult'))}</text><text x="${L}" y="47" fill="#646e65" font-size="11">${esc(p.pricesEnabled?p.unit:'%')}</text>`;
@@ -93,8 +96,41 @@ function chart(p){
  for(let i=0;i<futures.length;i++)if(i!==selected)svg+=`<path d="${path(futures[i],n-1)}" fill="none" stroke="#b6c2ad" stroke-width="1"/>`;
  if(c){const cx=x(n-1+c.future.length),cy=y(futures[selected].at(-1));svg+=`<path d="${path([...hist,...futures[selected].slice(1)])}" fill="none" stroke="#4c8062" stroke-width="2.8"/><circle cx="${cx}" cy="${cy}" r="6" fill="#345a45"/><rect x="${cx-172}" y="${Math.max(T,cy-39)}" width="163" height="28" rx="4" fill="#345a45"/><text x="${cx-18}" y="${Math.max(T,cy-39)+19}" text-anchor="end" fill="white" font-size="13">${label(futures[selected].at(-1))} / ${pct(c.returnPct)}</text>`;}
  svg+=`<path d="${path(q)}" fill="none" stroke="#242b27" stroke-width="2.8"/><circle cx="${split}" cy="${y(baseline)}" r="5" fill="#242b27"/><line x1="${split}" x2="${split}" y1="${T}" y2="${H-B}" stroke="#6b766b" stroke-dasharray="4 4"/><line x1="${W-R}" x2="${W-R}" y1="${T}" y2="${H-B}" stroke="#4c8062" stroke-dasharray="4 4"/><text x="${L}" y="${H-39}" fill="#646e65" font-size="11">${locale==='en'?'−95 bars':'−95 根'}</text><text x="${split}" y="${H-39}" text-anchor="middle" fill="#242b27" font-size="11">${esc(t('zero'))}</text><text x="${W-R}" y="${H-39}" text-anchor="end" fill="#345a45" font-size="11">${esc(horizonText(result.decisionHorizon))}</text><text x="${split}" y="${H-18}" text-anchor="middle" fill="#646e65" font-size="10">${dt(p.asOf)} UTC</text><text x="${W-R}" y="${H-18}" text-anchor="end" fill="#646e65" font-size="10">${esc(p.endpoint?dt(p.endpoint)+' UTC':t('calendarPending',{n:result.decisionHorizon.value}))}</text></svg>`;
+ for(const line of overlays){let pen=false,d='';for(let i=0;i<line.values.length;i++){const v=line.values[i];if(v===null){pen=false;continue;}d+=`${pen?'L':'M'}${x(i).toFixed(2)},${y(v).toFixed(2)} `;pen=true;}svg=svg.replace('</svg>',`<path data-series="${line.id}" d="${d}" fill="none" stroke="${line.color}" stroke-width="1.7"><title>${line.label}</title></path></svg>`);}
  $('chart').innerHTML=svg;
 }
+function renderIndicatorValues(){
+ const box=$('indicator-values');box.replaceChildren();if(!result)return;
+ const selected=INDICATORS.filter(spec=>document.querySelector(`[data-indicator="${spec.id}"]`).checked);
+ if(!selected.length)return;
+ const time=document.createElement('p');time.textContent=(locale==='en'?'Latest closed-bar values · ':'最新已收盘指标 · ')+dt(result.asOf)+' UTC · '+result.timeframe;box.append(time);
+ for(const spec of selected){const tag=document.createElement('span'),v=result.indicators?.series[spec.id]?.at(-1);tag.style.borderColor=spec.color;tag.textContent=`${spec.label}: ${v==null?(locale==='en'?'Insufficient warmup':'预热数据不足'):money(v)+' '+result.quoteUnit}`;box.append(tag);}
+}
+function renderQuality(){
+ const box=$('quality');box.replaceChildren();const c=result.coverage,meta=result.importInfo;
+ const age=Math.max(0,(Date.now()-Date.parse(result.asOf))/3600000);
+ const rows=locale==='en'?[
+ ['Source',result.synthetic?'Synthetic demonstration':(meta?.provider||'Unspecified')+' · user supplied, unverified'],
+ ['History',`${dt(c.start)} → ${dt(c.end)} UTC · ${c.closedBars.toLocaleString()} closed bars`],
+ ['Freshness',`${age.toFixed(1)} hours since cutoff · no live feed or exchange-calendar freshness check`],
+ ['Import',`${meta?.fileCount||0} files · ${meta?.duplicates||0} identical rows deduplicated · ${c.droppedOpen} open/after-cutoff bars excluded`],
+ ['Screening',`${c.examined} anchors checked → ${result.rawCandidates} eligible → ${result.episodeCount} displayed (limit ${result.maxCases})`],
+ ['Excluded',`${result.rejectedImmature} incomplete horizons; ${result.rejectedGaps} gaps/intervals; ${c.rejectedFlat} flat; ${c.rejectedDistance} distance threshold; ${result.rawCandidates-result.episodeCount} overlapping or beyond cap`],
+ ['Evidence',`${result.episodeCount<10?'Small sample; inspect individually':'Descriptive sample; predictive reliability unvalidated'} · price adjustment: ${meta?.adjustment||'synthetic'}`],
+ ['Trace',result.dataFingerprint+' · content identifier, not a source authenticity certificate']
+ ]:[
+ ['数据来源',result.synthetic?'合成演示':(meta?.provider||'未填写')+' · 用户声明，未经独立核验'],
+ ['历史覆盖',`${dt(c.start)} → ${dt(c.end)} UTC · ${c.closedBars.toLocaleString()} 根已收盘 K 线`],
+ ['数据新鲜度',`距截止时间 ${age.toFixed(1)} 小时 · 未接实时行情，未按交易日历判定是否更新`],
+ ['导入情况',`${meta?.fileCount||0} 个文件 · 相同记录去重 ${meta?.duplicates||0} 根 · 排除未收盘/晚于截止 ${c.droppedOpen} 根`],
+ ['筛选过程',`${c.examined} 个锚点 → ${result.rawCandidates} 个合格候选 → 展示 ${result.episodeCount} 个案例（上限 ${result.maxCases}）`],
+ ['未进入结果',`后续不完整 ${result.rejectedImmature}；缺口/周期 ${result.rejectedGaps}；近乎平直 ${c.rejectedFlat}；距离超限 ${c.rejectedDistance}；重叠去重或展示上限 ${result.rawCandidates-result.episodeCount}`],
+ ['证据状态',`${result.episodeCount<10?'样本少，逐例检查':'描述性案例；预测可靠性未验证'} · 复权口径：${({unknown:'未确认',raw:'未复权',adjusted:'已统一复权'})[meta?.adjustment]||'合成'}`],
+ ['追溯标记',result.dataFingerprint+' · 内容标识，不是来源真实性认证']
+ ];
+ for(const [label,value] of rows){const row=document.createElement('p'),b=document.createElement('strong');b.textContent=label+'：';row.append(b,document.createTextNode(value));box.append(row);}
+}
+document.querySelectorAll('[data-indicator]').forEach(e=>e.addEventListener('change',()=>{if(result){renderIndicatorValues();chart(priceProjection(result));}}));
 document.querySelectorAll('[data-insight]').forEach(button=>button.addEventListener('click',()=>{insightTask=button.dataset.insight;clearAI();document.querySelectorAll('[data-insight]').forEach(b=>b.setAttribute('aria-pressed',String(b===button)));refreshPayload();aiConfigUI();}));
 const aiErrors={AI_QUESTION_INVALID:['问题不能超过 600 字符。','Question must be at most 600 characters.'],AI_AUTH_FAILED:['密钥无效或无权限，请核对供应商。','Invalid key or permission. Check the provider.'],AI_RATE_LIMITED:['供应商限流或额度不足，请稍后再试。','Provider rate limit or quota reached. Try later.'],AI_OUTPUT_BLOCKED:['输出不符合证据解释规则，已丢弃。可换模型重试，数值结果不受影响。','Output failed the evidence-only rules and was discarded. Try another model; numerical results are unchanged.'],AI_OUTPUT_INVALID:['模型未返回约定格式，请使用支持 JSON 指令的模型。','Model returned an invalid format. Use a model that follows JSON instructions.'],AI_PROVIDER_ERROR:['供应商拒绝请求，请检查模型 ID 与 JSON 输出支持。','Provider rejected the request. Check model ID and JSON output support.'],AI_NETWORK_ERROR:['供应商请求超时或网络失败；没有自动重试或切换供应商。','Provider timeout/network failure. No automatic retry or provider switch.'],AI_LOCAL_LIMIT:['当前请求仍在进行或请求过于频繁，请稍后再试。','A request is active or the local rate limit was reached. Try later.']};
 function aiConfigUI(){

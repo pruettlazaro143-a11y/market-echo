@@ -31,3 +31,11 @@ Not verified:
 ## Fixed-insight update
 
 36 local tests pass; static build and JS syntax checks pass. Added coverage for free-text/API task rejection before provider calls, exact computed payloads, case subset scope, zero returns, tied extremes and missing components. Live model behavior and the updated interactive layout have not been manually verified in this environment.
+
+## v0.3 data-depth verification
+
+42 local tests and the static build pass. New checks cover exact SMA/EMA arithmetic and warmup, cutoff isolation, multi-file overlap handling, malformed imports, raw Binance timestamp conversion, result-cap stability, filter-count reconciliation and extended daily-session gaps. A synthetic 100,000-bar hourly run with a 100-case cap completed in approximately 3.23 seconds on this workspace; this is not a user-device performance guarantee or financial evidence.
+
+Browser automation could not be run: the required Chromium download timed out. Desktop/mobile overlay layout and interactions require manual acceptance. No new live provider data or paid AI calls were used.
+
+Manual acceptance: import two overlapping files, confirm deduplication; try conflicting rows and expect a clear error; toggle each indicator without rerunning retrieval; verify MA 200 warmup and cutoff labels; switch English and other-crypto mode; compare 30 versus 100 cases on a sufficiently long file.

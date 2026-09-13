@@ -12,6 +12,15 @@
 
 [三分钟上手与常见问题](docs/QUICKSTART.md) · [提交问题](https://github.com/pruettlazaro143-a11y/market-echo/issues/new/choose)
 
+## v0.3：历史深度与可选指标
+
+- 同一标的可一次拼接最多 24 份历史文件，总计 30 MB / 10 万根；重复记录去重，数值冲突报错。
+- 支持标准 OHLCV，以及解压后的 Binance 原始 Klines CSV。
+- 案例上限可选 30 / 60 / 100，显示历史覆盖、截止时间和候选被排除的原因。
+- 图旁勾选 MA 20/60/200、EMA 20/60，显示数据截止时的指标；不改变案例排序。
+
+[数据获取与指标口径](docs/DATA.md)。真实行情仍由用户提供，尚未接通实时行情或完整多市场历史库。
+
 ## 启动
 
 安装 Node.js 22+。下载 ZIP 并解压，或用 Git 获取项目：
@@ -53,7 +62,7 @@ npm start
 
 每类都需要自己的 CSV，不会自动下载行情。价格单位自行填写并与文件一致，例如 USDT、CNY、USD/oz。BTC/ETH 同样没有新闻或基本面验证，不能因为支持量价比较就认为可以预测。
 
-CSV 必需列：timestamp,open,high,low,close；volume,end 可选。时间须为 Unix 秒/毫秒或带时区 ISO 格式。最多 5 MB / 20,000 根，固定比较最近 96 根已收盘 K 线。支持 5m/15m/1h/4h/1d，A 股先限 1d。日线可明确提供真实收盘 end；未提供时按周期推算。请自行统一复权、换月和交易时段。
+CSV 必需列：timestamp,open,high,low,close；volume,end 可选。时间须为 Unix 秒/毫秒或带时区 ISO 格式。最多 30 MB / 100,000 根，固定比较最近 96 根已收盘 K 线。支持 5m/15m/1h/4h/1d，A 股先限 1d。日线可明确提供真实收盘 end；未提供时按周期推算。请自行统一复权、换月和交易时段。
 
 `examples/synthetic-btc-1h.csv` 为合成 BTC 现货 1h 演示，导入时保留“合成 / 测试数据”标记。
 
