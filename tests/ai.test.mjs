@@ -35,3 +35,12 @@ test('chunked UTF-8 provider content preserves Chinese characters',async()=>{
 test('preview evidence equals the sanitized evidence sent to the model',()=>{
  assert.deepEqual(validateEvidence(evidence),evidence);
 });
+
+test('question is bounded, sent as data with matching evidence, not retained across calls',async()=>{
+ const question='Why do the historical outcomes differ?';
+ await explain({...request,question},{fetchImpl:async(_,o)=>{const b=JSON.parse(o.body);assert.deepEqual(JSON.parse(b.messages[1].content),{evidence,question});return chatResponse();}});
+ let called=false;
+ for(const question of ['x'.repeat(601),{override:'policy'},null])await assert.rejects(explain({...request,question},{fetchImpl:async()=>{called=true;return chatResponse();}}),/AI_QUESTION_INVALID/);
+ assert.equal(called,false);
+ await explain(request,{fetchImpl:async(_,o)=>{assert.deepEqual(JSON.parse(JSON.parse(o.body).messages[1].content),evidence);return chatResponse();}});
+});

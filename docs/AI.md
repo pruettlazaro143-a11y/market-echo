@@ -52,3 +52,11 @@ Public multi-user hosting requires a separately designed authentication, key-sto
 The prompt now prioritizes observations from the supplied case subset, component distances and a concrete case-comparison action. Caveats are concentrated in the final section. It explicitly distinguishes component distances from weights, preserves horizon units and prohibits invented chart shapes, years and market regimes. This is prompt guidance, not a semantic accuracy guarantee. Numeric prose remains blocked in this small update; the chart and table remain the source of numerical facts.
 
 本次小调整把解读集中到具体观察、相似依据和案例对比步骤，边界说明放在最后。数值仍以图表为准；没有新增自动核验 AI 所有事实的能力，也没有用预写的成功回答替代模型输出。
+
+## Case questions / 案例追问
+
+An optional question (maximum 600 characters) is sent as untrusted user data alongside the same sanitized evidence. Editing it cancels the in-flight UI request, clears the prior answer and requires renewed consent; a provider may still bill an already-sent call. No conversation history is stored or forwarded. The preview includes the question. Do not enter credentials or personal sensitive information.
+
+The prompt directs the model to explain historical evidence and redirect requests for current/future direction, asset picks or positions. This prompt and the existing output checks are limited safeguards, not guaranteed intent detection or legal clearance. The product does not purport to waive liability for its developer or any model provider.
+
+追问仅围绕历史案例，前后问题不串成聊天历史。模型按提示词将交易方向请求转回历史证据；没有声称能阻止所有绕过。上线经营或提供具体方向服务前，应另行评估适用法律和供应商条款。
