@@ -12,6 +12,15 @@ Find similar historical price windows, inspect how they ended, and see what the 
 
 [Three-minute walkthrough & FAQ](docs/QUICKSTART.md) · [Report an issue](https://github.com/pruettlazaro143-a11y/market-echo/issues/new/choose)
 
+## v0.5: screenshot upload and confirmation
+
+- Upload a PNG/JPEG/WebP chart, preview it locally, then explicitly consent to optional BYOK image recognition. DeepSeek, OpenAI, Claude and configured compatible endpoints are supported through their image message formats; your chosen model must accept images.
+- Review instrument, exchange, spot/perpetual type, interval, visible candle count and the last closed-bar end in UTC. Unreadable fields remain blank. The approximate 32-point trace can be corrected visually or entered manually without AI.
+- **Full handoff:** confirmed Binance BTCUSDT/ETHUSDT spot, 96 visible bars and an exact cutoff fetch corresponding historical OHLCV. Prices and MA/EMA come from those records, never screenshot pixels.
+- **Shape comparison:** other screenshots can be compared with the CSV/download/demo reference library selected below. Results are separate, show historical case returns only, and contain no screenshot price targets or indicators. Unknown screenshot time and synthetic reference data are visibly labeled.
+
+[Screenshot walkthrough, provider setup and limits](docs/SCREENSHOTS.md)
+
 ## v0.4: real history, revealable replay, explainable matches
 
 - Load **1,000 / 5,000 / 10,000 closed BTC/ETH spot bars** from the public Binance API, then save the snapshot as CSV. No market-data key required; regional/provider availability applies.
@@ -51,7 +60,7 @@ npm run example
 npm run build
 ```
 
-`dist/` supports static hosting and local CSV/demo retrieval, replay and overlays. AI forwarding and direct history downloads require the local Node server. Do not double-click the HTML file; modules and Workers require HTTP. The server is loopback-only; it is **not a multi-user AI proxy**.
+`dist/` supports static hosting and local CSV/demo retrieval, replay and overlays. AI explanation/image recognition and direct history downloads require the local Node server. Manual screenshot tracing against local CSV/demo history also works statically. Do not double-click the HTML file; modules and Workers require HTTP. The server is loopback-only; it is **not a multi-user AI proxy**.
 
 ## Understand the numbers
 
@@ -92,11 +101,11 @@ Run retrieval, select DeepSeek / OpenAI / Anthropic, enter your provider's exact
 
 Choose one of three fixed insights: matching dimensions, outcome differences, or cases to compare. Computed facts and case links work without AI; AI adds a short explanation. Free-text questions are not accepted. Numeric calculations stay in the deterministic engine. Numeric/transactional prose is rejected by a conservative output check; this check is not a complete semantic safety guarantee. No raw HTML is rendered.
 
-CSV stays in browser memory for retrieval. AI sends a small, inspectable summary through the local server to exactly the chosen provider. The full CSV is not sent. Keys remain in transient page/server memory, are not written to this project's disk/logs/browser storage, and are cleared on provider changes or by the clear-key button. Provider data policies still apply. No automatic retry, credential fallback or provider switching.
+CSV stays in browser memory for retrieval. Evidence-explanation AI sends a small, inspectable summary through the local server to exactly the chosen provider. The separate screenshot-recognition action sends the previewed image only after image-specific consent. The full CSV is not sent. Keys remain in transient page/server memory, are not written to this project's disk/logs/browser storage, and are cleared on provider changes or by the clear-key button. Provider data policies still apply. No automatic retry, credential fallback or provider switching.
 
 ## Status and contribution
 
-Version **0.4.0**. Existing engine plus standalone bilingual UI, endpoint arithmetic, market taxonomy and local AI gateway. No private Fieldnote database, payment integration, production keys or old Git history is included. Built-in CSV is synthetic.
+Version **0.5.0**. Existing engine plus standalone bilingual UI, endpoint arithmetic, market taxonomy and local AI gateway. No private Fieldnote database, payment integration, production keys or old Git history is included. Built-in CSV is synthetic.
 
 See [verification](docs/VERIFICATION.md) for exactly what was tested. Live provider calls, real-browser visuals and public deployment must not be inferred from passing unit tests. The provided CI runs tests/build; it does not publish.
 

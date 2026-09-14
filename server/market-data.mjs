@@ -4,7 +4,9 @@ export const MARKET_ENDPOINT='https://data-api.binance.vision/api/v3/klines';
 export async function loadMarketHistory(request,{fetchImpl=fetch,now=Date.now(),signal}={}){
  const {symbol,timeframe,limit}=request||{};
  if(!['BTCUSDT','ETHUSDT'].includes(symbol)||!Object.hasOwn(TIMEFRAMES,timeframe)||![1000,5000,10000].includes(limit))throw new MarketDataError('MARKET_CONFIG_INVALID',400);
- const ms=TIMEFRAMES[timeframe].ms,bars=new Map();let endTime=now-1,pages=0,droppedOpen=0,exhausted=false;
+ let cutoff=now;
+ if(request.endAt!==undefined){if(typeof request.endAt!=='string'||!/^\d{4}-\d{2}-\d{2}T.*Z$/.test(request.endAt)||!Number.isFinite(Date.parse(request.endAt))||Date.parse(request.endAt)>now)throw new MarketDataError('MARKET_CONFIG_INVALID',400);cutoff=Date.parse(request.endAt);}
+ const ms=TIMEFRAMES[timeframe].ms,bars=new Map();let endTime=cutoff-1,pages=0,droppedOpen=0,exhausted=false;
  const deadline=AbortSignal.any([AbortSignal.timeout(45000),...(signal?[signal]:[])]);
  while(bars.size<limit&&pages<12){
   const url=new URL(MARKET_ENDPOINT);url.search=new URLSearchParams({symbol,interval:timeframe,limit:'1000',endTime:String(endTime)});
@@ -24,13 +26,13 @@ export async function loadMarketHistory(request,{fetchImpl=fetch,now=Date.now(),
    oldest=Math.min(oldest,t);
    const bar={t,end,o:Number(row[1]),h:Number(row[2]),l:Number(row[3]),c:Number(row[4]),v:Number(row[5]),complete:true};
    const previous=bars.get(t);if(previous&&['end','o','h','l','c','v'].some(k=>bar[k]!==previous[k]))throw new MarketDataError('MARKET_CONFLICT');
-   if(end>now){droppedOpen++;continue;}bars.set(t,bar);
+   if(end>cutoff){droppedOpen++;continue;}bars.set(t,bar);
   }
   if(oldest>=endTime)throw new MarketDataError('MARKET_PAGINATION_STALLED');
   endTime=oldest-1;
  }
  let closed;
- try{closed=validateBars([...bars.values()],{asOf:now}).bars.slice(-limit);}catch{throw new MarketDataError('MARKET_RESPONSE_INVALID');}
+ try{closed=validateBars([...bars.values()],{asOf:cutoff}).bars.slice(-limit);}catch{throw new MarketDataError('MARKET_RESPONSE_INVALID');}
  if(!closed.length)throw new MarketDataError('MARKET_EMPTY');
  const gaps=closed.slice(1).filter((b,i)=>b.t!==closed[i].end).length;
  return {bars:closed,metadata:{provider:'Binance public spot API',endpoint:MARKET_ENDPOINT,symbol,timeframe,market:'spot',quoteUnit:'USDT',fetchedAt:new Date(now).toISOString(),first:new Date(closed[0].t).toISOString(),last:new Date(closed.at(-1).end).toISOString(),requestedBars:limit,receivedBars:closed.length,pages,droppedOpen,gaps,partial:closed.length<limit,exhausted,synthetic:false,verified:false}};

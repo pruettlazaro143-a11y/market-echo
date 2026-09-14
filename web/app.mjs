@@ -1,3 +1,4 @@
+import {mountScreenshot,screenshotError} from './screenshot.mjs';
 import {matchDetail} from '../lib/market-echo/match-detail.mjs';
 import {INDICATORS} from '../lib/market-echo/indicators.mjs';
 import {insightPayload} from '../lib/market-echo/insights.mjs';
@@ -51,8 +52,8 @@ function populate(reset=false){
  $('source-label').textContent=t($('source').value==='demo'?'synthBadge':remote?'remoteBadge':'csvBadge');
  $('upload-box').hidden=$('source').value!=='csv';return cfg;
 }
-function translate(){document.documentElement.lang=locale==='en'?'en':'zh-CN';$('language').value=locale;document.querySelectorAll('[data-t]').forEach(e=>e.textContent=t(e.dataset.t));populate();setStatus(statusKey,statusVars);if(lastError)$('error').textContent=errorText(lastError,locale);if(result)render();aiConfigUI();}
-function changed(){worker?.terminate();worker=null;downloadSnapshot=null;$('save-history').hidden=true;result=null;$('results').hidden=true;$('error').hidden=true;lastError=null;clearAI();setStatus('changed');}
+function translate(){document.documentElement.lang=locale==='en'?'en':'zh-CN';$('language').value=locale;document.querySelectorAll('[data-t]').forEach(e=>e.textContent=t(e.dataset.t));populate();setStatus(statusKey,statusVars);if(lastError)$('error').textContent=screenshotError(lastError,locale)||errorText(lastError,locale);if(result)render();aiConfigUI();screenshot.translate();}
+function changed(){screenshot.clearResult();worker?.terminate();worker=null;downloadSnapshot=null;$('save-history').hidden=true;result=null;$('results').hidden=true;$('error').hidden=true;lastError=null;clearAI();setStatus('changed');}
 $('category').addEventListener('change',()=>populate(true));
 $('asset').addEventListener('change',()=>{const cfg=populate();$('symbol').value=cfg.defaultSymbol;$('quote').value=cfg.quote;});
 $('source').addEventListener('change',()=>populate());
@@ -60,9 +61,9 @@ $('form').addEventListener('change',changed);
 for(const id of ['symbol','quote','data-provider','cutoff'])$(id).addEventListener('input',changed);
 $('file').addEventListener('change',()=>{if($('file').files&&[...$('file').files].some(f=>f.name.startsWith('synthetic-')))$('synthetic').checked=true;});
 $('language').addEventListener('change',()=>{locale=$('language').value;try{localStorage.setItem('market-echo-language',locale);}catch{}clearAI();translate();});
-function setBusy(v){busy=v;$('cancel-run').hidden=!v;for(const e of $('form').querySelectorAll('input,select,button'))e.disabled=v;$('language').disabled=v;if(!v)populate();$('run').textContent=t(v?'running':'run');}
-function showError(message){lastError=message;$('error').textContent=errorText(message,locale);$('error').hidden=false;setStatus('noResult');}
-async function run(e){e?.preventDefault();if(busy)return;changed();const runId=++runSequence;setBusy(true);let files,remote;
+function setBusy(v){busy=v;screenshot.setBusy(v);$('cancel-run').hidden=!v;for(const e of $('form').querySelectorAll('input,select,button'))e.disabled=v;$('language').disabled=v;if(!v)populate();$('run').textContent=t(v?'running':'run');}
+function showError(message){lastError=message;$('error').textContent=screenshotError(message,locale)||errorText(message,locale);$('error').hidden=false;setStatus('noResult');}
+async function run(e,shot=null){e?.preventDefault();if(busy)return;screenshot.cancelRecognition();changed();const runId=++runSequence;setBusy(true);let files,remote;
  try{
   if($('source').value==='csv'){const chosen=[...$('file').files];if(!chosen.length){$('error').textContent=t('selectFile');$('error').hidden=false;setBusy(false);return;}if(chosen.length>24)throw Error('CSV_FILES_LIMIT');if(chosen.reduce((n,f)=>n+f.size,0)>30_000_000)throw Error('CSV 最大 30 MB');files=await Promise.all(chosen.map(async f=>({text:await f.text()})));}
 
@@ -71,7 +72,7 @@ async function run(e){e?.preventDefault();if(busy)return;changed();const runId=+
   if($('source').value==='remote'){
    if(!config?.marketData)throw Error('MARKET_LOCAL_REQUIRED');
    setStatus('remoteLoading');downloadController=new AbortController();
-   const response=await fetch(new URL('../api/market-history',import.meta.url),{method:'POST',headers:{'Content-Type':'application/json'},signal:downloadController.signal,body:JSON.stringify({symbol:$('asset').value+'USDT',timeframe:$('timeframe').value,limit:Number($('remote-count').value)})});
+   const response=await fetch(new URL('../api/market-history',import.meta.url),{method:'POST',headers:{'Content-Type':'application/json'},signal:downloadController.signal,body:JSON.stringify({symbol:$('asset').value+'USDT',timeframe:$('timeframe').value,limit:Number($('remote-count').value),...(shot?.full?{endAt:shot.full.lastClosedAt}:shot?.shape?.lastClosedAt?{endAt:shot.shape.lastClosedAt}:{})})});
    const data=await response.json();if(runId!==runSequence)return;if(!response.ok)throw Error(data.error||'MARKET_PROVIDER_ERROR');
    remote=data;downloadSnapshot=data;downloadController=null;$('save-history').hidden=false;
   }
@@ -80,11 +81,12 @@ async function run(e){e?.preventDefault();if(busy)return;changed();const runId=+
    if(runId!==runSequence)return;
    if(data.type==='revealed'){if(result?.replay?.state==='hidden'){result.replay=data.replay;render();}worker?.terminate();worker=null;return;}
    setBusy(false);if(data.error){worker?.terminate();worker=null;showError(data.error);return;}
+   if(data.type==='shape'){worker?.terminate();worker=null;screenshot.showResult(data.result);setStatus('done',{bars:data.result.scannedBars.toLocaleString(),cases:data.result.cases.length});return;}
    result=data.result;if(result.replay?.state!=='hidden'){worker.terminate();worker=null;}
    selected=0;render();setStatus('done',{bars:result.scannedBars.toLocaleString(),cases:result.episodeCount});
   };
   worker.onerror=()=>{if(runId!==runSequence)return;worker?.terminate();worker=null;setBusy(false);$('error').textContent=t('workerFail');$('error').hidden=false;};
-  worker.postMessage({source:$('source').value,remote,replay:$('replay-mode').checked,files,format:$('csv-format').value,provider:$('data-provider').value.trim(),adjustment:$('adjustment').value,synthetic:$('synthetic').checked,settings:{...cfg,maxCases:Number($('case-limit').value),asOf:$('cutoff').value?new Date($('cutoff').value+'Z').toISOString():undefined,timeframe:$('timeframe').value,symbol:$('symbol').value.trim(),quoteUnit:$('quote').value.trim(),decisionHorizon:{value:Number(value),unit}}});
+  worker.postMessage({screenshot:shot,source:$('source').value,remote,replay:shot?false:$('replay-mode').checked,files,format:$('csv-format').value,provider:$('data-provider').value.trim(),adjustment:$('adjustment').value,synthetic:$('synthetic').checked,settings:{...cfg,maxCases:Number($('case-limit').value),asOf:$('cutoff').value?new Date($('cutoff').value+'Z').toISOString():undefined,timeframe:$('timeframe').value,symbol:$('symbol').value.trim(),quoteUnit:$('quote').value.trim(),decisionHorizon:{value:Number(value),unit}}});
  }catch(error){if(runId!==runSequence)return;downloadController=null;setBusy(false);if(error.name!=='AbortError')showError(error.message);}
 }
 function render(){
@@ -175,6 +177,7 @@ function renderQuality(){
  ['证据状态',`${result.episodeCount<10?'样本少，逐例检查':'描述性案例；预测可靠性未验证'} · 复权口径：${({unknown:'未确认',raw:'未复权',adjusted:'已统一复权'})[meta?.adjustment]||'合成'}`],
  ['追溯标记',result.dataFingerprint+' · 内容标识，不是来源真实性认证']
  ];
+ if(result.screenshot)rows.unshift([locale==='en'?'Screenshot handoff':'截图衔接',locale==='en'?'User-confirmed Binance spot metadata; prices and indicators come from downloaded OHLCV, using the last 96 closed bars.':'用户已确认 Binance 现货信息；价格和指标来自下载的真实 OHLCV，比较最后 96 根已收盘记录。']);
  if(result.download)rows.unshift([locale==='en'?'Download':'行情下载',`${result.download.provider} · ${result.download.receivedBars}/${result.download.requestedBars} · ${result.download.fetchedAt} · ${result.download.partial?t('remotePartial'):t('remoteComplete')}`]);
  for(const [label,value] of rows){const row=document.createElement('p'),b=document.createElement('strong');b.textContent=label+'：';row.append(b,document.createTextNode(value));box.append(row);}
 }
@@ -202,5 +205,8 @@ $('export').onclick=()=>{if(!result)return;const blob=new Blob([JSON.stringify({
 $('demo').onclick=()=>{$('source').value='demo';$('category').value='crypto';$('timeframe').value='1h';populate(true);run();};
 $('form').addEventListener('submit',run);
 window.addEventListener('pagehide',()=>{$('key').value='';aiController?.abort();});
+const screenshot=mountScreenshot({getLocale:()=>locale,getConfig:()=>config,onInvalidate:()=>{if(!busy)changed();},
+ onFull:async shot=>{if(busy)return;$('source').value='remote';$('category').value='crypto';populate(true);$('asset').value=shot.marketSymbol.startsWith('BTC')?'BTC':'ETH';$('timeframe').value=shot.timeframe;populate();$('cutoff').value=shot.lastClosedAt.slice(0,19);$('replay-mode').checked=false;await run(undefined,{full:shot});},
+ onShape:async shot=>{if(busy)return;if($('timeframe').value!==shot.timeframe)throw Error('SCREENSHOT_INTERVAL_MISMATCH');await run(undefined,{shape:shot});}});
 populate(true);translate();run();
-fetch(new URL('../api/config',import.meta.url)).then(r=>r.ok?r.json():null).then(data=>{if(data?.ai)config=data;aiConfigUI();}).catch(()=>aiConfigUI());
+fetch(new URL('../api/config',import.meta.url)).then(r=>r.ok?r.json():null).then(data=>{if(data?.ai)config=data;aiConfigUI();screenshot.translate();}).catch(()=>aiConfigUI());

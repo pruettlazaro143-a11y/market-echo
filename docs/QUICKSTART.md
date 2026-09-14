@@ -45,3 +45,9 @@
 - **Page will not open?** Keep npm start running, use its local HTTP address and Node.js 22+. Do not open HTML through file://.
 - **Failed CI badge?** The first cloud job was blocked by a GitHub account billing lock before tests started. See [verification](VERIFICATION.md); local results are recorded separately.
 - **Found a bug?** [Open an issue](https://github.com/pruettlazaro143-a11y/market-echo/issues/new/choose) with reproducible steps and minimal synthetic data. Omit credentials and private datasets.
+
+## 使用截图 / Using screenshots
+
+页面顶部选择截图 → 本地预览 → 勾选图片发送授权并识别（或手动填写与描形）→ 核对信息和曲线 → 选择完整行情衔接或形态比较。完整操作与限制见 [截图说明](SCREENSHOTS.md)。图片识别不是把截图恢复成精确 OHLCV。
+
+At the top of the page: choose an image → preview → consent and recognize, or enter/trace manually → review → use full history handoff or shape comparison. See [the screenshot guide](SCREENSHOTS.md). Recognition does not reconstruct exact OHLCV.

@@ -1,4 +1,5 @@
 import {loadMarketHistory,MarketDataError} from '../server/market-data.mjs';
+import {recognizeChart} from '../server/vision.mjs';
 import http from 'node:http';
 import {readFile,stat} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
@@ -9,13 +10,25 @@ const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8'
 const security={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self'; worker-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",'Referrer-Policy':'no-referrer'};
 let marketActive=false;const marketCalls=[];
 let active=false;const calls=[];
+let visionActive=false;const visionCalls=[];
 function json(res,status,value){res.writeHead(status,{...security,'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(value));}
 const server=http.createServer(async(req,res)=>{
  try{
   const allowed=[`127.0.0.1:${req.socket.localPort}`,`localhost:${req.socket.localPort}`];
   if(!allowed.includes(req.headers.host)){json(res,403,{error:'ORIGIN_DENIED'});return;}
   const url=new URL(req.url,'http://'+req.headers.host);
-  if(url.pathname==='/api/config'&&req.method==='GET'){json(res,200,{ai:true,marketData:true,endpoints:endpoints()});return;}
+  if(url.pathname==='/api/config'&&req.method==='GET'){json(res,200,{ai:true,marketData:true,vision:true,endpoints:endpoints()});return;}
+  if(url.pathname==='/api/recognize-chart'){
+   if(req.method!=='POST'){json(res,405,{error:'METHOD_DENIED'});return;}
+   if(req.headers.origin!==url.origin||!req.headers['content-type']?.startsWith('application/json')){json(res,403,{error:'ORIGIN_DENIED'});return;}
+   while(visionCalls[0]<Date.now()-60000)visionCalls.shift();
+   if(visionActive||visionCalls.length>=3){json(res,429,{error:'AI_LOCAL_LIMIT'});return;}
+   visionActive=true;visionCalls.push(Date.now());const controller=new AbortController();res.on('close',()=>controller.abort());
+   try{let size=0;const chunks=[];for await(const chunk of req){size+=chunk.length;if(size>7_000_000)throw new AiError('VISION_IMAGE_INVALID',413);chunks.push(chunk);}
+    let body;try{body=JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw new AiError('VISION_REQUEST_INVALID');}
+    const result=await recognizeChart(body,{signal:controller.signal});if(!res.destroyed)json(res,200,result);
+   }catch(e){if(!res.destroyed)json(res,e instanceof AiError?e.status:500,{error:e instanceof AiError?e.code:'VISION_OUTPUT_INVALID'});}finally{visionActive=false;}return;
+  }
   if(url.pathname==='/api/market-history'){
    if(req.method!=='POST'){json(res,405,{error:'METHOD_DENIED'});return;}
    if(req.headers.origin!==url.origin||!req.headers['content-type']?.startsWith('application/json')){json(res,403,{error:'ORIGIN_DENIED'});return;}

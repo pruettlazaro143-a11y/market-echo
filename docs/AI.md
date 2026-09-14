@@ -54,3 +54,7 @@ Free-text questions have been removed from both the UI and API. The server rejec
 The browser displays those facts and clickable extreme-case rows without requiring AI. The server recomputes the same payload from validated evidence. It forwards only the task and computed facts; user-supplied symbol labels, IDs, dates and arbitrary text are not sent to the model. The consent preview matches that payload. AI adds at most three short sentences, with one fixed boundary note underneath. No free conversation history or natural-language task override is supported.
 
 This is not a comprehensive defense against all model errors or a validated prediction system. Automated checks use mock model responses; paid live behavior and desktop/mobile layout require manual acceptance.
+
+## Screenshot recognition (v0.5)
+
+The separate screenshot entry uses its own image-specific consent and transient key fields. It forwards one inline PNG/JPEG/WebP image to the chosen image-capable model using fixed extraction instructions. It accepts no user prompts or conversation history. See [SCREENSHOTS.md](SCREENSHOTS.md). The model may misread the chart; manual confirmation is required before retrieval. No live paid vision call is implied by mocked adapter tests.

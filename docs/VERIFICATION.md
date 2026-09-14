@@ -1,5 +1,16 @@
 # Verification
 
+## v0.5.0 screenshot entry / 2026-09-14
+
+- **56 local tests pass**, with a successful static build. Added recognition adapter/schema/consent tests for DeepSeek, OpenAI, Anthropic and configured compatible endpoints; image URL/MIME rejection; free-text request rejection before any provider call; source identity, exact historical cutoff and manual-confirmation gates.
+- Shape tests cover cutoff isolation, completed and non-overlapping historical episodes, reserved final reference windows, interval mismatch, synthetic provenance and absence of screenshot price targets/indicators. Worker tests verify that perpetual or mismatched data cannot enter the Binance spot full-handoff route.
+- A DOM integration check exercised preview, consent, manual-confirmation gating, full handoff, perpetual rejection, shape results, language switching, invalidation and key/image clearing. Image decoding, network and Worker transport were mocked in that check.
+- **Chromium browser verification succeeded**, using an externally installed QA-only browser after the usual browser installer failed. Real file decoding/preview, native Worker retrieval, consent and confirmation clicks, full handoff, MA 20 toggle, exchange guard, shape case selection, English/Chinese switching, editable-shape invalidation, and key/image clearing passed without page errors. Desktop width 1280 and mobile width 390 were checked; no page-wide horizontal overflow was observed. Desktop and mobile captures were inspected; mobile checkbox shrinking and datetime-field clipping were corrected.
+- The browser full-handoff flow used the **live Binance history endpoint**, requesting the confirmed historical cutoff `2026-09-01T00:00:00Z`; the resulting observation matched that cutoff. Vision recognition in the browser was a **mock response**, not a paid live model call. The generated chart image and synthetic comparison library were test fixtures, not recognition-accuracy evidence or trading results.
+- No user API key was used. Real-model OCR, candle-count estimation, curve extraction quality and provider-specific access remain unverified until the user's own first call. Schema validation and these checks do not establish predictive value. GitHub Actions results are separate from these local checks.
+
+Manual first use: crop one chart, verify that only the preview is sent after image-specific consent, review every inferred field/trace, and check errors for an unavailable image model. For OKX/perpetual screenshots, use a deliberately selected reference history or manual import; do not label Binance spot as that contract.
+
 ## v0.4.0 / 2026-09-14
 
 - `npm test`: 49/49 local tests pass. `npm run build` passes. Browser/Worker/server module syntax, HTML element IDs and Chinese/English translation keys were checked.
