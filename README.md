@@ -12,6 +12,10 @@ Find similar historical price windows, inspect how they ended, and see what the 
 
 [Three-minute walkthrough & FAQ](docs/QUICKSTART.md) · [Report an issue](https://github.com/pruettlazaro143-a11y/market-echo/issues/new/choose)
 
+## v0.5.1: visible screenshot-action feedback
+
+Both screenshot actions now show validation, progress and errors beside the clicked button. The selected reference library is shown there, with explicit controls to configure a matching synthetic demo or clear an unknown cutoff. Unsupported markets and mismatched CSV intervals are never silently substituted.
+
 ## v0.5: screenshot upload and confirmation
 
 - Upload a PNG/JPEG/WebP chart, preview it locally, then explicitly consent to optional BYOK image recognition. DeepSeek, OpenAI, Claude and configured compatible endpoints are supported through their image message formats; your chosen model must accept images.
@@ -105,7 +109,7 @@ CSV stays in browser memory for retrieval. Evidence-explanation AI sends a small
 
 ## Status and contribution
 
-Version **0.5.0**. Existing engine plus standalone bilingual UI, endpoint arithmetic, market taxonomy and local AI gateway. No private Fieldnote database, payment integration, production keys or old Git history is included. Built-in CSV is synthetic.
+Version **0.5.1**. Existing engine plus standalone bilingual UI, endpoint arithmetic, market taxonomy and local AI gateway. No private Fieldnote database, payment integration, production keys or old Git history is included. Built-in CSV is synthetic.
 
 See [verification](docs/VERIFICATION.md) for exactly what was tested. Live provider calls, real-browser visuals and public deployment must not be inferred from passing unit tests. The provided CI runs tests/build; it does not publish.
 

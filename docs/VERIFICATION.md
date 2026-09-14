@@ -1,5 +1,11 @@
 # Verification
 
+## v0.5.1 screenshot-action feedback / 2026-09-14
+
+56 local tests and the static build pass. A Chromium regression reproduces the reported XAUUSD / 4h / 140-bar settings with a future UTC timestamp. It checks visible button-local errors for unsupported full history, future time and interval mismatch; explicit time clearing and renewed review; matching gold/4h synthetic configuration and renewed library consent; successful shape results; missing CSV; an asynchronous mocked market-network failure; English switching; and visible feedback at 390px without page-wide overflow. No page errors were observed. Recognition and network errors were mocked; no paid model call or new real gold feed was used. A mobile capture was inspected.
+
+The original regression was a feedback-placement defect: errors existed but appeared outside the action viewport. The previous happy-path browser checks did not assert visibility for this unsupported-market/error combination.
+
 ## v0.5.0 screenshot entry / 2026-09-14
 
 - **56 local tests pass**, with a successful static build. Added recognition adapter/schema/consent tests for DeepSeek, OpenAI, Anthropic and configured compatible endpoints; image URL/MIME rejection; free-text request rejection before any provider call; source identity, exact historical cutoff and manual-confirmation gates.

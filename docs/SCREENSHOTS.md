@@ -1,5 +1,16 @@
 # Screenshot entry / 截图入口
 
+## 点击按钮没有反应？（v0.5.1 修复）
+
+旧版将截图校验提示放在识别区上方，计算/下载错误又放在下方主表单，用户在按钮处看不到。新版把校验、进度和错误同步显示在刚点击的按钮旁，错误会滚动到可见位置。
+
+- 黄金 XAUUSD 的完整行情按钮会直接说明“该标的尚未接通直接行情接口”。可以导入对应 CSV 做数值检索，或使用截图形态比较；不会替换成 BTC。
+- 时间按 UTC 解读，不能填写当前本地时钟。无法确认最后收盘时刻时，明确点击“清空时间做形态比较”并重新勾选人工核对，结果会标记时间未确认。
+- 形态参考库的来源、标的和周期显示在按钮旁。截图为 4h、库为 1h 时会提示如何处理；CSV 不会自动重标周期。点击“设置同市场、同周期的合成演示库”可以试跑流程，需重新确认使用该合成库。
+- 尚未选 CSV、下载失败、Worker 错误也在按钮旁显示。完整检索成功后会滚动到结果。
+
+Both action buttons now carry visible inline feedback. Gold/full-history limitations, UTC errors, reference interval mismatches, missing CSV and asynchronous failures are surfaced in place. Matching synthetic-demo configuration is an explicit action requiring renewed reference consent; it is not real market history.
+
 ## 中文操作
 
 1. 用 `npm start` 启动新版，在页面顶部选择截图。支持 PNG/JPEG/WebP，文件最大 5 MB，每边最多 4096 像素。先裁剪到一张主价格图，保留标的、周期、交易所和时间轴，遮住账户与订单信息。

@@ -14,7 +14,7 @@ let runSequence=0;
 let insightTask='match',downloadController=null,downloadSnapshot=null;
 let result=null,selected=0,worker=null,busy=false,aiController=null,config=null,statusKey='ready',statusVars={},lastError=null;
 const horizonText=h=>t(h.unit,{n:h.value});
-function setStatus(k,v={}){statusKey=k;statusVars=v;$('status').textContent=t(k,v);}
+function setStatus(k,v={}){statusKey=k;statusVars=v;$('status').textContent=t(k,v);screenshot.feedback(t(k,v));}
 function refreshPayload(){
  if(!result?.episodeCount){$('payload').textContent='';$('insight-facts').replaceChildren();return;}
  const payload=insightPayload(aiEvidence(result),insightTask),f=payload.facts;
@@ -52,7 +52,7 @@ function populate(reset=false){
  $('source-label').textContent=t($('source').value==='demo'?'synthBadge':remote?'remoteBadge':'csvBadge');
  $('upload-box').hidden=$('source').value!=='csv';return cfg;
 }
-function translate(){document.documentElement.lang=locale==='en'?'en':'zh-CN';$('language').value=locale;document.querySelectorAll('[data-t]').forEach(e=>e.textContent=t(e.dataset.t));populate();setStatus(statusKey,statusVars);if(lastError)$('error').textContent=screenshotError(lastError,locale)||errorText(lastError,locale);if(result)render();aiConfigUI();screenshot.translate();}
+function translate(){document.documentElement.lang=locale==='en'?'en':'zh-CN';$('language').value=locale;document.querySelectorAll('[data-t]').forEach(e=>e.textContent=t(e.dataset.t));populate();setStatus(statusKey,statusVars);if(lastError)$('error').textContent=screenshotError(lastError,locale)||errorText(lastError,locale);if(result)render();aiConfigUI();screenshot.translate();if(lastError)screenshot.feedback(screenshotError(lastError,locale)||errorText(lastError,locale),true);}
 function changed(){screenshot.clearResult();worker?.terminate();worker=null;downloadSnapshot=null;$('save-history').hidden=true;result=null;$('results').hidden=true;$('error').hidden=true;lastError=null;clearAI();setStatus('changed');}
 $('category').addEventListener('change',()=>populate(true));
 $('asset').addEventListener('change',()=>{const cfg=populate();$('symbol').value=cfg.defaultSymbol;$('quote').value=cfg.quote;});
@@ -62,10 +62,10 @@ for(const id of ['symbol','quote','data-provider','cutoff'])$(id).addEventListen
 $('file').addEventListener('change',()=>{if($('file').files&&[...$('file').files].some(f=>f.name.startsWith('synthetic-')))$('synthetic').checked=true;});
 $('language').addEventListener('change',()=>{locale=$('language').value;try{localStorage.setItem('market-echo-language',locale);}catch{}clearAI();translate();});
 function setBusy(v){busy=v;screenshot.setBusy(v);$('cancel-run').hidden=!v;for(const e of $('form').querySelectorAll('input,select,button'))e.disabled=v;$('language').disabled=v;if(!v)populate();$('run').textContent=t(v?'running':'run');}
-function showError(message){lastError=message;$('error').textContent=screenshotError(message,locale)||errorText(message,locale);$('error').hidden=false;setStatus('noResult');}
+function showError(message){lastError=message;$('error').textContent=screenshotError(message,locale)||errorText(message,locale);$('error').hidden=false;setStatus('noResult');screenshot.feedback($('error').textContent,true);}
 async function run(e,shot=null){e?.preventDefault();if(busy)return;screenshot.cancelRecognition();changed();const runId=++runSequence;setBusy(true);let files,remote;
  try{
-  if($('source').value==='csv'){const chosen=[...$('file').files];if(!chosen.length){$('error').textContent=t('selectFile');$('error').hidden=false;setBusy(false);return;}if(chosen.length>24)throw Error('CSV_FILES_LIMIT');if(chosen.reduce((n,f)=>n+f.size,0)>30_000_000)throw Error('CSV 最大 30 MB');files=await Promise.all(chosen.map(async f=>({text:await f.text()})));}
+  if($('source').value==='csv'){const chosen=[...$('file').files];if(!chosen.length){$('error').textContent=t('selectFile');$('error').hidden=false;setBusy(false);screenshot.feedback(t('selectFile'),true);return;}if(chosen.length>24)throw Error('CSV_FILES_LIMIT');if(chosen.reduce((n,f)=>n+f.size,0)>30_000_000)throw Error('CSV 最大 30 MB');files=await Promise.all(chosen.map(async f=>({text:await f.text()})));}
 
   if(runId!==runSequence)return;
   const cfg=marketConfig($('category').value,$('asset').value,['us','cn'].includes($('category').value)?'spot':$('instrument').value),[value,unit]=$('horizon').value.split(':');
@@ -83,9 +83,9 @@ async function run(e,shot=null){e?.preventDefault();if(busy)return;screenshot.ca
    setBusy(false);if(data.error){worker?.terminate();worker=null;showError(data.error);return;}
    if(data.type==='shape'){worker?.terminate();worker=null;screenshot.showResult(data.result);setStatus('done',{bars:data.result.scannedBars.toLocaleString(),cases:data.result.cases.length});return;}
    result=data.result;if(result.replay?.state!=='hidden'){worker.terminate();worker=null;}
-   selected=0;render();setStatus('done',{bars:result.scannedBars.toLocaleString(),cases:result.episodeCount});
+   selected=0;render();if(shot?.full)$('results').scrollIntoView({block:'start',behavior:'smooth'});setStatus('done',{bars:result.scannedBars.toLocaleString(),cases:result.episodeCount});
   };
-  worker.onerror=()=>{if(runId!==runSequence)return;worker?.terminate();worker=null;setBusy(false);$('error').textContent=t('workerFail');$('error').hidden=false;};
+  worker.onerror=()=>{if(runId!==runSequence)return;worker?.terminate();worker=null;setBusy(false);$('error').textContent=t('workerFail');$('error').hidden=false;screenshot.feedback(t('workerFail'),true);};
   worker.postMessage({screenshot:shot,source:$('source').value,remote,replay:shot?false:$('replay-mode').checked,files,format:$('csv-format').value,provider:$('data-provider').value.trim(),adjustment:$('adjustment').value,synthetic:$('synthetic').checked,settings:{...cfg,maxCases:Number($('case-limit').value),asOf:$('cutoff').value?new Date($('cutoff').value+'Z').toISOString():undefined,timeframe:$('timeframe').value,symbol:$('symbol').value.trim(),quoteUnit:$('quote').value.trim(),decisionHorizon:{value:Number(value),unit}}});
  }catch(error){if(runId!==runSequence)return;downloadController=null;setBusy(false);if(error.name!=='AbortError')showError(error.message);}
 }
@@ -205,7 +205,10 @@ $('export').onclick=()=>{if(!result)return;const blob=new Blob([JSON.stringify({
 $('demo').onclick=()=>{$('source').value='demo';$('category').value='crypto';$('timeframe').value='1h';populate(true);run();};
 $('form').addEventListener('submit',run);
 window.addEventListener('pagehide',()=>{$('key').value='';aiController?.abort();});
-const screenshot=mountScreenshot({getLocale:()=>locale,getConfig:()=>config,onInvalidate:()=>{if(!busy)changed();},
+const screenshot=mountScreenshot({getLocale:()=>locale,getConfig:()=>config,
+ getReference:()=>({source:$('source').value,symbol:$('symbol').value,timeframe:$('timeframe').value,instrument:$('instrument').value,files:[...$('file').files].map(f=>f.name),synthetic:$('synthetic').checked}),
+ onConfigureDemo:s=>{if(busy)return;if(!['crypto','us','cn','metals'].includes(s.category)||!['5m','15m','1h','4h','1d'].includes(s.timeframe)||s.category==='cn'&&s.timeframe!=='1d')throw Error('SCREENSHOT_FIELDS_REQUIRED');$('source').value='demo';$('category').value=s.category;populate(true);const symbol=s.symbol.toUpperCase();$('asset').value=s.category==='metals'?(symbol.includes('XAU')?'XAU':symbol.includes('XAG')?'XAG':'OTHER'):s.category==='crypto'?(symbol.startsWith('BTC')?'BTC':symbol.startsWith('ETH')?'ETH':'OTHER'):'CUSTOM';$('timeframe').value=s.timeframe;if(['spot','perpetual','futures'].includes(s.instrument))$('instrument').value=s.instrument;populate();const cfg=marketConfig(s.category,$('asset').value,['us','cn'].includes(s.category)?'spot':$('instrument').value);$('symbol').value=cfg.defaultSymbol;$('quote').value=cfg.quote;$('cutoff').value='';$('replay-mode').checked=false;changed();},
+ onInvalidate:()=>{if(!busy)changed();},
  onFull:async shot=>{if(busy)return;$('source').value='remote';$('category').value='crypto';populate(true);$('asset').value=shot.marketSymbol.startsWith('BTC')?'BTC':'ETH';$('timeframe').value=shot.timeframe;populate();$('cutoff').value=shot.lastClosedAt.slice(0,19);$('replay-mode').checked=false;await run(undefined,{full:shot});},
  onShape:async shot=>{if(busy)return;if($('timeframe').value!==shot.timeframe)throw Error('SCREENSHOT_INTERVAL_MISMATCH');await run(undefined,{shape:shot});}});
 populate(true);translate();run();
