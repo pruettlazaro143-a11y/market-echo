@@ -15,3 +15,14 @@ test('browser worker reports invalid input without a partial result',()=>{
   self.onmessage({data:{source:'csv',csv:'bad,data\n1,2',settings}});
   assert.equal(typeof response.error,'string');assert.equal(response.result,undefined);
 });
+test('worker withholds replay prices until reveal and clears them on a new run',()=>{
+  self.onmessage({data:{source:'demo',replay:true,settings}});
+  const before=structuredClone(response.result);
+  assert.equal(before.replay.actual,null);assert.equal(before.replay.state,'hidden');
+  assert.equal(Object.hasOwn(response,'actual'),false);
+  self.onmessage({data:{type:'reveal'}});
+  assert.equal(response.type,'revealed');assert.equal(response.replay.state,'revealed');assert.ok(response.replay.actual.future.length);
+  self.onmessage({data:{source:'demo',replay:true,settings}});
+  self.onmessage({data:{source:'csv',csv:'bad,data\n1,2',settings}});
+  self.onmessage({data:{type:'reveal'}});assert.equal(response.error,'REPLAY_UNAVAILABLE');
+});

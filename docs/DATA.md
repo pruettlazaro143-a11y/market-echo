@@ -1,14 +1,24 @@
 # Data depth and indicators / 数据深度与指标
 
-## v0.3 capabilities
+## Import capabilities
 
 Import up to 24 CSV files for **one instrument, market, bar interval and adjustment basis**, totaling 30 MB and 100,000 unique bars. Files are sorted by time. Identical overlaps between files are removed; conflicting values at a timestamp abort the import. Duplicate timestamps within a single file remain invalid. No symbol identity can be inferred from a CSV that contains only numbers and timestamps.
 
 Choose a result cap of 30, 60 or 100. This is a maximum, not a promised sample size. Fixed distance thresholds, complete historical outcomes and non-overlapping episodes are retained. Increasing the cap does not manufacture more evidence. Long histories are examined in a Worker; candidate outcome traces are materialized only after selection. The 96-bar observation window is unchanged.
 
-The data panel shows the included date range, file and bar counts, identical overlaps, excluded open/after-cutoff bars, candidate filtering counts, returned cases and content fingerprint. Provider and adjustment labels are **user declarations**, not independent source verification. Similarity is a distance mapping, not a confidence score or future win probability.
+The data panel shows the included date range, file and bar counts, identical overlaps, excluded open/after-cutoff bars, candidate filtering counts, returned cases and content fingerprint. CSV provider and adjustment labels are **user declarations**, not independent source verification. Direct downloads record their fixed provider endpoint and retrieval time; no independent cross-provider verification is performed. Similarity is a distance mapping, not a confidence score or future win probability.
 
-There is no live feed or built-in real cross-market database. Synthetic demos have not been enlarged or relabeled as real history. Source access, cost and redistribution rights must be checked separately. No provider API key or user market data is bundled in this repository.
+BTC/ETH spot now supports on-demand historical API snapshots. There is no streaming feed or built-in real cross-market database. Synthetic demos have not been enlarged or relabeled as real history. Source access, cost and redistribution rights must be checked separately. No provider API key or user market data is bundled in this repository.
+
+## Direct BTC / ETH history (v0.4)
+
+Run `npm start`, choose **Load BTC / ETH spot history**, select BTC or ETH and an interval, then request 1,000 / 5,000 / 10,000 bars. Retrieval downloads recent pages from the fixed [Binance public spot klines endpoint](https://developers.binance.com/docs/binance-spot-api-docs/rest-api/market-data-endpoints) at `https://data-api.binance.vision/api/v3/klines`. It does not use an account or key, connect futures, place orders or switch providers. Local settings limit the instrument to BTCUSDT/ETHUSDT spot.
+
+Pages move backward by open timestamp with a 1,000-bar page limit. Inclusive API close times become exclusive bar ends. Open bars are excluded; duplicate conflicts and invalid OHLC abort. Coverage, fetch time, requested/received count and short history are shown. Missing bars are not invented. There is one local download at a time, at most four attempts per minute and a 45-second request deadline. Network, region or rate-limit failures are surfaced without substituting synthetic data. Cancel stops the request; retry is manual.
+
+**Save downloaded CSV** preserves closed bars for later local import. CSV contains OHLCV and timestamps, not the provider metadata; retain the JSON report for the source endpoint, retrieval time and matching context. Downloads stay in transient server/browser memory until explicitly exported. A static-only site cannot use this route. Other markets still require consistent CSV exports.
+
+中文：在数据来源选择“直接获取 BTC / ETH 现货历史”，再选币种、周期和根数，点击检索。取数后可下载 CSV；切换来源或设置会清除页面内的下载缓存，需保存时先下载。这里获取的是已收盘历史快照，不是实时价格推送。5,000 根小时线约覆盖 208 天，5,000 根 5 分钟线约覆盖 17 天；若要更长历史，可继续用月度归档和多文件导入。
 
 ## Source routes
 

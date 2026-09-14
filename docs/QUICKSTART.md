@@ -8,9 +8,11 @@
 4. 切换另一个案例，对比结果。终点圆点表示历史幅度换算，不是已经知道的未来价格；相似度分数也不是上涨概率。
 5. 理解演示后再导入自己的 CSV，核对市场、周期、价格单位与数据来源。需要 AI 时再按 [AI 配置](AI.md) 填模型和密钥，先看发送摘要，再确认调用。
 
+6. 勾选“历史回放”后再检索：先看历史案例，再点“揭晓实际后续”。蓝线显示留出数据；用合成数据回放时仍只是流程演示。展开“为什么这个案例相似”可核对标准化形态和距离权重。
+
 ### 常见问题
 
-**为什么看到的不是今天行情？** 没有实时行情接口。基准来自导入数据最后一根符合截止条件的已收盘 K 线；内置数据是合成演示。
+**如何使用真实行情？** 本机启动后，选择“直接获取 BTC / ETH 现货历史”，选周期与根数后检索。它下载最新可用的已收盘快照，不持续刷新；美股、A 股和金属仍用自己的 CSV。内置演示仍为合成。开启回放会把观察截止退回一个完整期限，用末尾数据检验对照。
 
 **为什么找不到案例？** 需要观察窗口之前有足够的历史，还要能完整观察案例后续。短文件、期限太长或数据不连续都可能没有有效结果。先用随仓库提供的演示文件确认流程，不要把无结果强行改成有结果。
 
@@ -32,9 +34,11 @@
 4. Select another case. The endpoint represents an equivalent historical move, not an observed future price. Similarity is not probability.
 5. Import your CSV only after checking the market, interval, quote unit and provenance. For optional AI, follow [AI setup](AI.md), inspect the evidence preview and consent before sending.
 
+6. Enable historical replay, run retrieval, inspect cases, then reveal the held-out path. Expand the match explanation to inspect normalized shapes and distance weights. Synthetic replay remains a demonstration.
+
 ### FAQ
 
-- **No live prices?** Correct. The cutoff and baseline come from your imported closed bars. Built-in data is synthetic.
+- **Real prices?** Select the direct BTC/ETH spot history source with the local server running. It downloads a closed-bar snapshot, not a streaming quote. Other markets use CSV. Replay moves the cutoff back by one complete horizon; built-in data remains synthetic.
 - **No matches?** The file needs enough earlier history and complete subsequent outcomes. Short files, long horizons or data gaps can leave no eligible cases. Try the supplied synthetic example first.
 - **No mapped price for other crypto?** This mode compares shape and structure only and retains historical percentage outcomes.
 - **AI required?** No. Import, retrieval, charts, comparison and export work independently. Optional model calls are billed by your provider.

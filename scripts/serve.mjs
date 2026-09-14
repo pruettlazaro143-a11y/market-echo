@@ -1,3 +1,4 @@
+import {loadMarketHistory,MarketDataError} from '../server/market-data.mjs';
 import http from 'node:http';
 import {readFile,stat} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
@@ -6,6 +7,7 @@ import {AiError,endpoints,explain} from '../server/ai.mjs';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const types={'.html':'text/html; charset=utf-8','.css':'text/css; charset=utf-8','.mjs':'text/javascript; charset=utf-8','.svg':'image/svg+xml','.csv':'text/csv; charset=utf-8','.png':'image/png'};
 const security={'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; script-src 'self'; style-src 'self'; worker-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'",'Referrer-Policy':'no-referrer'};
+let marketActive=false;const marketCalls=[];
 let active=false;const calls=[];
 function json(res,status,value){res.writeHead(status,{...security,'Content-Type':'application/json; charset=utf-8'});res.end(JSON.stringify(value));}
 const server=http.createServer(async(req,res)=>{
@@ -13,7 +15,18 @@ const server=http.createServer(async(req,res)=>{
   const allowed=[`127.0.0.1:${req.socket.localPort}`,`localhost:${req.socket.localPort}`];
   if(!allowed.includes(req.headers.host)){json(res,403,{error:'ORIGIN_DENIED'});return;}
   const url=new URL(req.url,'http://'+req.headers.host);
-  if(url.pathname==='/api/config'&&req.method==='GET'){json(res,200,{ai:true,endpoints:endpoints()});return;}
+  if(url.pathname==='/api/config'&&req.method==='GET'){json(res,200,{ai:true,marketData:true,endpoints:endpoints()});return;}
+  if(url.pathname==='/api/market-history'){
+   if(req.method!=='POST'){json(res,405,{error:'METHOD_DENIED'});return;}
+   if(req.headers.origin!==url.origin||!req.headers['content-type']?.startsWith('application/json')){json(res,403,{error:'ORIGIN_DENIED'});return;}
+   while(marketCalls[0]<Date.now()-60000)marketCalls.shift();
+   if(marketActive||marketCalls.length>=4){json(res,429,{error:'MARKET_LOCAL_LIMIT'});return;}
+   marketActive=true;marketCalls.push(Date.now());const controller=new AbortController();res.on('close',()=>controller.abort());
+   try{let raw='';for await(const chunk of req){raw+=chunk.toString('utf8');if(raw.length>2048)throw new MarketDataError('MARKET_CONFIG_INVALID',400);}
+    let request;try{request=JSON.parse(raw);}catch{throw new MarketDataError('MARKET_CONFIG_INVALID',400);}
+    const data=await loadMarketHistory(request,{signal:controller.signal});if(!res.destroyed)json(res,200,data);
+   }catch(e){if(!res.destroyed)json(res,e instanceof MarketDataError?e.status:500,{error:e instanceof MarketDataError?e.code:'MARKET_PROVIDER_ERROR'});}finally{marketActive=false;}return;
+  }
   if(url.pathname==='/api/explain'){
    if(req.method!=='POST'){json(res,405,{error:'METHOD_DENIED'});return;}
    if(req.headers.origin!==url.origin||!req.headers['content-type']?.startsWith('application/json')){json(res,403,{error:'ORIGIN_DENIED'});return;}

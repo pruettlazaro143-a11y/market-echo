@@ -1,4 +1,19 @@
-# Verification — v0.2.0 / 2026-09-13
+# Verification
+
+## v0.4.0 / 2026-09-14
+
+- `npm test`: 49/49 local tests pass. `npm run build` passes. Browser/Worker/server module syntax, HTML element IDs and Chinese/English translation keys were checked.
+- New mocked-provider tests cover fixed-endpoint backward pagination, closed-bar filtering, short histories, malformed data, provider failures without fallback, and config rejection before network access. HTTP tests cover the market route's origin/method/config protections.
+- Replay tests modify only held-out OHLCV and verify unchanged cutoff, retrieved cases, indicators and AI evidence. Worker tests verify no actual prices in its initial result, reveal behavior and clearing held data on a new run. A-share daily replay exposes the observed endpoint date without inventing a calendar date.
+- Normalized overlays numerically match the engine's existing shape distance and effective weighted distance in full and structure-only modes.
+- **Live read-only market call:** the new loader retrieved 5,000 BTCUSDT 1h closed bars in six pages from the fixed Binance endpoint at `2026-09-14T01:21:43.101Z`. Returned coverage: `2026-02-17T17:00Z` through exclusive close `2026-09-14T01:00Z`; one open candle excluded, zero interval gaps. This verifies that request in this environment, not all regions or continuous availability. No account/key or paid AI call was used.
+- **Local HTTP → live provider → Worker integration:** ETHUSDT 1h returned 1,000 closed bars in two pages with HTTP 200 at `2026-09-14T01:28:07.276Z`. Replay used 976 preceding bars, returned six cases with `synthetic = false`, initially exposed no actual prices, and then revealed the held-out 24 bars. This exercised the data/Worker path without a browser.
+- **Browser limitation:** Chromium installation failed with truncated downloads / HTTP 502. Browser rendering, mobile layout and click-through behavior were not verified by browser automation for v0.4. Module/Worker/HTTP checks do not substitute for that review.
+- GitHub Actions and public hosting are separate from these local results. This change does not disable the test workflow or establish predictive accuracy/profitability.
+
+Manual acceptance: direct-download BTC/ETH and save CSV; change to CSV for other markets; run replay, inspect the hidden state, reveal the blue trace and check that case order stays fixed; switch cases in the normalized shape panel; toggle MA/EMA; repeat with English and at mobile width. Failed downloads must display an error rather than synthetic results.
+
+## v0.2.0 / 2026-09-13
 
 Verified with Node.js v24.19.0:
 
@@ -25,7 +40,7 @@ Not verified:
 4. Select Crypto → Other; verify structure-only wording and no rebased target price. Select A-shares; verify daily-only interval.
 5. Import the synthetic example; preserve its synthetic flag. Test malformed CSV recovery.
 6. Enter your chosen provider/model/key, inspect the exact evidence summary, consent and run an AI call. Verify output stays separate from numeric facts. Provider changes must clear the key and consent.
-7. Export JSON; verify projection.actualFuture is null and source/synthetic labels remain.
+7. Export normal retrieval JSON; verify projection.actualFuture is null and source/synthetic labels remain. For v0.4 replay, it becomes historical_replay only after revealing.
 8. At 390px width, inspect readability and deliberate table overflow; verify no page-wide horizontal overflow.
 
 ## Fixed-insight update

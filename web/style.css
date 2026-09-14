@@ -5,3 +5,6 @@
 .insight-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-top:20px}.insight-tabs [aria-pressed="true"]{background:var(--green);color:white}#insight-facts button{margin:4px 8px 4px 0;font-size:12px}
 
 .depth-options{margin-top:16px}.quality-panel{padding:18px;border:1px solid var(--line);border-radius:6px;margin:16px 0;font-size:12px;overflow-wrap:anywhere}.quality-panel p{margin:7px 0}.indicator-controls{display:flex;gap:14px;flex-wrap:wrap;border:1px solid var(--line);border-radius:5px;padding:12px}.indicator-controls legend{font-size:12px}.indicator-values{font-size:12px;margin:12px 0}.indicator-values span{display:inline-block;border-left:3px solid;padding:3px 8px;margin:4px}.indicator-controls .check{margin:0}
+
+
+#remote-box{padding:16px;border:1px solid var(--line);margin:16px 0;border-radius:6px}#remote-box select{max-width:180px}.match-panel{padding:16px;margin:16px 0;border:1px solid var(--line);border-radius:6px}.match-panel summary{cursor:pointer;font-weight:600}.match-panel .chart{margin-top:12px}#cancel-run{margin-top:12px}#replay-status{font-variant-numeric:tabular-nums}

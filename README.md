@@ -12,14 +12,23 @@ Find similar historical price windows, inspect how they ended, and see what the 
 
 [Three-minute walkthrough & FAQ](docs/QUICKSTART.md) · [Report an issue](https://github.com/pruettlazaro143-a11y/market-echo/issues/new/choose)
 
-## v0.3: deeper imports and optional indicators
+## v0.4: real history, revealable replay, explainable matches
+
+- Load **1,000 / 5,000 / 10,000 closed BTC/ETH spot bars** from the public Binance API, then save the snapshot as CSV. No market-data key required; regional/provider availability applies.
+- Enable **historical replay** to hold out the latest complete outcome. Retrieve using only the earlier prefix, then reveal the observed path in blue without changing the cases.
+- Expand **Why this case matches** for the actual normalized shapes used by the engine, the largest sampled deviation and effective distance weights.
+- Keep the existing deeper multi-file imports and optional MA/EMA overlays below.
+
+[Open-source references and implementation choices](docs/OPEN_SOURCE_REFERENCES.md) · [Replay method](docs/REPLAY.md)
+
+### Data depth and indicators
 
 - Merge up to 24 historical files for one instrument: 30 MB / 100,000 bars, with conflicting overlaps rejected.
 - Import unzipped Binance raw klines, including microsecond timestamps, or standard OHLCV CSV.
 - Select up to 30 / 60 / 100 non-overlapping cases; inspect coverage, freshness and exclusion reasons.
 - Toggle MA 20/60/200 and EMA 20/60, calculated from pre-cutoff closed history. No indicator extends into the rebased future.
 
-[Data sources, formats and indicator definitions](docs/DATA.md). Real cross-market history is user-provided; no live feed is connected.
+[Data sources, formats and indicator definitions](docs/DATA.md). BTC/ETH spot has an on-demand history connection. Equities, metals, other crypto and derivatives remain CSV-based; no streaming feed or complete multi-market database is bundled.
 
 ## Start
 
@@ -42,7 +51,7 @@ npm run example
 npm run build
 ```
 
-`dist/` supports static hosting and retrieval without AI. AI forwarding requires the local Node server. Do not double-click the HTML file; modules and Workers require HTTP. The server is loopback-only; it is **not a multi-user AI proxy**.
+`dist/` supports static hosting and local CSV/demo retrieval, replay and overlays. AI forwarding and direct history downloads require the local Node server. Do not double-click the HTML file; modules and Workers require HTTP. The server is loopback-only; it is **not a multi-user AI proxy**.
 
 ## Understand the numbers
 
@@ -52,7 +61,7 @@ npm run build
 
 If the baseline is 100 and a historical case changed +2%, its rebased endpoint is 102. This answers “what would an equivalent move amount to?”, not “where will the market go?”. Each chart shows an endpoint dot, price/change callout, baseline marker and horizon. Tables show historical original prices separately from rebased prices.
 
-Median and P10–P90 are descriptive summaries, **not forecast targets or confidence intervals**. Actual future prices are unavailable and remain explicitly unfilled. No paper/live trades are placed.
+Median and P10–P90 are descriptive summaries, **not forecast targets or confidence intervals**. Normal retrieval leaves actual future prices unfilled. Historical replay can reveal an already-recorded held-out outcome; a single replay is not an accuracy estimate or a strategy backtest. No paper/live trades are placed.
 
 ## Markets
 
@@ -61,10 +70,10 @@ Median and P10–P90 are descriptive summaries, **not forecast targets or confid
 | Crypto | BTC, ETH | Shape, structure, volatility and available volume |
 | Crypto | Other assets | Shape/structure only; historical percentages, no rebased price targets |
 | US equities | User-provided ticker | Imported series; observed-session counting |
-| China A-shares | User-provided ticker | **Daily bars only** in v0.2; no holiday-calendar claim |
+| China A-shares | User-provided ticker | **Daily bars only**; no holiday-calendar claim |
 | Gold & metals | Gold, silver, other metals | User CSV; spot/reference/futures metadata |
 
-Market selection does not download or validate a feed. All markets need your own consistent CSV. Specify the quote unit (e.g. USDT, USD, CNY, USD/oz). Instrument type is retained separately, not used to mix spot/futures histories. No news, earnings, macro, liquidity or token-mechanism analysis is included in numerical matching.
+Choose the direct-history source for BTC/ETH spot, or import your own consistent CSV. Selecting a market alone does not download data. Downloaded bars identify their provider and retrieval time; this is not independent cross-provider verification. Specify the quote unit (e.g. USDT, USD, CNY, USD/oz). Instrument type is retained separately, not used to mix spot/futures histories. No news, earnings, macro, liquidity or token-mechanism analysis is included in numerical matching.
 
 ## CSV
 
@@ -87,7 +96,7 @@ CSV stays in browser memory for retrieval. AI sends a small, inspectable summary
 
 ## Status and contribution
 
-Version **0.3.0**. Existing engine plus standalone bilingual UI, endpoint arithmetic, market taxonomy and local AI gateway. No private Fieldnote database, payment integration, production keys or old Git history is included. Built-in CSV is synthetic.
+Version **0.4.0**. Existing engine plus standalone bilingual UI, endpoint arithmetic, market taxonomy and local AI gateway. No private Fieldnote database, payment integration, production keys or old Git history is included. Built-in CSV is synthetic.
 
 See [verification](docs/VERIFICATION.md) for exactly what was tested. Live provider calls, real-browser visuals and public deployment must not be inferred from passing unit tests. The provided CI runs tests/build; it does not publish.
 
